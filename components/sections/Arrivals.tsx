@@ -1,0 +1,119 @@
+"use client";
+import ButtonText from "../ui/ButtonText";
+import { useEffect, useRef, useState, useMemo } from "react";
+import { createClient } from "@/utils/supabase/client";
+import { useIsMounted } from "@/hooks/useIsMounted";
+import { useProductActions } from "@/hooks/useProductActions";
+import { useProductRatings } from "@/hooks/useProductRatings";
+import ArrivalCard from "./ArrivalCard";
+
+interface Product {
+  id: number;
+  img: string;
+  title: string;
+  price: number;
+  mrp?: number;
+  category?: string;
+  isNew?: boolean;
+  valid_until?: string | number | null;
+}
+
+const Arrivals = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  const { handleWishlistToggle, handleAddToCart, isInWishlist } =
+    useProductActions();
+  const isMounted = useIsMounted();
+  const productIds = useMemo(() => products.map((p) => p.id), [products]);
+  const { getRating } = useProductRatings(productIds);
+
+  useEffect(() => {
+    supabase
+      .from("products")
+      .select("*")
+      .order("id", { ascending: false })
+      .limit(10)
+      .then(({ data, error }) => {
+        if (!error && data) setProducts(data);
+        setLoading(false);
+      });
+  }, [supabase]);
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    if (maxScroll > 0) setScrollProgress(el.scrollLeft / maxScroll);
+  };
+
+  return (
+    <div className="w-full">
+      <div className="px-5 md:px-10 lg:px-40 pt-5 md:pt-14">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-0">
+          <h1 className="text-4xl sm:text-5xl lg:text-5xl font-medium leading-[1.1]">
+            New <br className="block sm:hidden" /> Arrivals
+          </h1>
+          <div className="hidden md:block self-end">
+            <ButtonText text="More Products" linkTo="shop" />
+          </div>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="pl-5 md:pl-10 lg:pl-40 mt-6 md:mt-10 flex gap-4 md:gap-6">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="w-55 md:w-65.5 shrink-0 animate-pulse">
+              <div className="w-full aspect-4/5 bg-gray-200 rounded" />
+              <div className="mt-3 h-4 bg-gray-200 rounded w-3/4" />
+              <div className="mt-2 h-4 bg-gray-200 rounded w-1/2" />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="pl-5 md:pl-10 lg:pl-40 mt-6 md:mt-10">
+          <div
+            ref={scrollRef}
+            onScroll={handleScroll}
+            className="flex gap-4 md:gap-6 overflow-x-auto pb-2"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
+            <style jsx>{`
+              div::-webkit-scrollbar {
+                display: none;
+              }
+            `}</style>
+            {products.map((card) => (
+              <ArrivalCard
+                key={card.id}
+                card={card}
+                isMounted={isMounted}
+                isInWishlist={isInWishlist}
+                handleWishlistToggle={handleWishlistToggle}
+                handleAddToCart={handleAddToCart}
+                getRating={getRating}
+              />
+            ))}
+          </div>
+          <div className="pr-5 md:pr-10 lg:pr-40 mt-2">
+            <div className="h-0.5 bg-gray-200 rounded-full relative">
+              <div
+                className="h-full bg-[#141718] rounded-full absolute top-0 left-0 transition-all duration-150"
+                style={{ width: "33%", left: `${scrollProgress * 67}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="md:hidden px-5 mt-6 pb-8">
+        <ButtonText text="More Products" linkTo="shop" />
+      </div>
+    </div>
+  );
+};
+
+export default Arrivals;

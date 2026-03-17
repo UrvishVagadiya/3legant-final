@@ -1,0 +1,166 @@
+"use client";
+import { GoHeart, GoHeartFill } from "react-icons/go";
+import { IoMdStar, IoMdStarHalf, IoMdStarOutline } from "react-icons/io";
+import Link from "next/link";
+import { isOfferExpired } from "@/utils/isOfferExpired";
+
+interface ProductCardProps {
+  product: {
+    id: number | string;
+    img?: string;
+    image_url?: string;
+    title?: string;
+    name?: string;
+    price: number;
+    mrp?: number;
+    MRP?: number;
+    old_price?: number;
+    isNew?: boolean;
+    valid_until?: string | number | null;
+    color?: string[] | string;
+  };
+  isMounted: boolean;
+  isWishlisted: boolean;
+  onWishlistToggle: (e: React.MouseEvent) => void;
+  onAddToCart: (e: React.MouseEvent) => void;
+  linkTo?: string;
+  sizes?: "sm" | "md";
+  avgRating?: number;
+  reviewCount?: number;
+}
+
+const RatingStars = ({
+  rating,
+  className = "",
+}: {
+  rating: number;
+  className?: string;
+}) => {
+  return (
+    <div className={`flex ${className}`}>
+      {[1, 2, 3, 4, 5].map((star) => {
+        if (rating >= star) return <IoMdStar key={star} />;
+        if (rating >= star - 0.5) return <IoMdStarHalf key={star} />;
+        return <IoMdStarOutline key={star} />;
+      })}
+    </div>
+  );
+};
+
+export { RatingStars };
+
+const ProductCard = ({
+  product,
+  isMounted,
+  isWishlisted,
+  onWishlistToggle,
+  onAddToCart,
+  linkTo,
+  sizes = "md",
+  avgRating = 0,
+  reviewCount = 0,
+}: ProductCardProps) => {
+  const image = product.img || product.image_url || "/image-1.png";
+  const title = product.title || product.name || "";
+  const rawMrp = product.mrp || product.MRP || product.old_price || 0;
+  const expired = isOfferExpired(product.valid_until);
+  const displayPrice =
+    expired && rawMrp > product.price ? rawMrp : product.price;
+  const mrp = expired ? 0 : rawMrp;
+  const discount =
+    mrp > displayPrice ? Math.round(((mrp - displayPrice) / mrp) * 100) : 0;
+
+  const isSmall = sizes === "sm";
+  const badgeText = isSmall
+    ? "text-[11px] md:text-sm"
+    : "text-[10px] md:text-xs";
+  const badgePad = isSmall ? "px-3" : "px-2.5";
+  const padding = isSmall ? "p-3 md:p-4" : "p-3";
+
+  const card = (
+    <div className="group relative flex flex-col">
+      <div className="relative bg-[#F3F5F7] flex items-center justify-center overflow-hidden rounded w-full aspect-4/5">
+        <img
+          className="w-full h-full object-cover object-center mix-blend-multiply"
+          src={image}
+          alt={title}
+        />
+
+        <div
+          className={`w-full absolute top-0 ${padding} flex justify-between items-start z-10`}
+        >
+          <div className="flex flex-col gap-2">
+            {product.isNew && (
+              <div
+                className={`bg-[#FFFFFF] text-[#141718] font-bold ${badgeText} py-1 ${badgePad} rounded flex justify-center items-center shadow-sm`}
+              >
+                NEW
+              </div>
+            )}
+            {discount > 0 && (
+              <div
+                className={`bg-[#38CB89] text-white font-bold ${badgeText} py-1 ${badgePad} rounded flex justify-center items-center shadow-sm`}
+              >
+                -{discount}%
+              </div>
+            )}
+          </div>
+          <div
+            onClick={onWishlistToggle}
+            className={`${isMounted && isWishlisted ? "opacity-100" : "opacity-0 group-hover:opacity-100"} bg-white cursor-pointer w-8 h-8 shadow-sm rounded-full flex items-center justify-center transition-all duration-300 hover:scale-110`}
+          >
+            {isMounted && isWishlisted ? (
+              <GoHeartFill className="text-black text-lg" />
+            ) : (
+              <GoHeart className="text-[#6C7275] text-lg" />
+            )}
+          </div>
+        </div>
+
+        <div
+          onClick={onAddToCart}
+          className={`absolute opacity-0 group-hover:opacity-100 transition-all duration-300 left-3 right-3 ${isSmall ? "md:left-4 md:right-4 bottom-3 md:bottom-4 py-2 md:py-3 rounded-lg" : "bottom-3 py-2.5 rounded"} bg-[#141718] flex items-center justify-center cursor-pointer shadow-lg hover:bg-black`}
+        >
+          <h2
+            className={`text-white font-medium ${isSmall ? "text-sm md:text-base" : "text-sm"}`}
+          >
+            Add to cart
+          </h2>
+        </div>
+      </div>
+
+      <div className={isSmall ? "my-3" : "mt-3"}>
+        <RatingStars
+          rating={avgRating}
+          className={`text-[#141718] mb-1.5 md:mb-2 ${isSmall ? "text-sm md:text-base" : "text-[14px]"}`}
+        />
+        <h3
+          className={`font-semibold text-[#141718] mb-1 truncate ${isSmall ? "text-base md:text-lg" : "text-[15px]"}`}
+        >
+          {title}
+        </h3>
+        <div className="flex gap-2.5 items-center mt-0.5">
+          <p
+            className={`font-semibold text-[#141718] ${isSmall ? "text-sm md:text-base" : "text-sm"}`}
+          >
+            ${Number(displayPrice).toFixed(2)}
+          </p>
+          {mrp > 0 && mrp > displayPrice && (
+            <p
+              className={`line-through text-[#6C7275] ${isSmall ? "text-xs md:text-sm" : "text-xs"}`}
+            >
+              ${Number(mrp).toFixed(2)}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
+  if (linkTo) {
+    return <Link href={linkTo}>{card}</Link>;
+  }
+  return card;
+};
+
+export default ProductCard;

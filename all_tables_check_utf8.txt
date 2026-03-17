@@ -1,0 +1,11 @@
+﻿Listing ALL tables in public schema...
+Table "profiles" error: Could not find the table 'public.profiles' in the schema cache
+Table "user_profiles" error: Could not find the table 'public.user_profiles' in the schema cache
+Table "users" error: Could not find the table 'public.users' in the schema cache
+Table "accounts" error: Could not find the table 'public.accounts' in the schema cache
+Table "user_data" error: Could not find the table 'public.user_data' in the schema cache
+Table "roles" error: Could not find the table 'public.roles' in the schema cache
+Table "user_roles" error: Could not find the table 'public.user_roles' in the schema cache
+Table "customers" error: Could not find the table 'public.customers' in the schema cache
+Table "members" error: Could not find the table 'public.members' in the schema cache
+Table "settings" error: Could not find the table 'public.settings' in the schema cache
