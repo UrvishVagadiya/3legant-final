@@ -2,6 +2,7 @@
 import { GoHeart, GoHeartFill } from "react-icons/go";
 import { RatingStars } from "@/components/ui/ProductCard";
 import Link from "next/link";
+import Image from "next/image";
 import { isOfferExpired } from "@/utils/isOfferExpired";
 
 interface Product {
@@ -47,10 +48,12 @@ const ArrivalCard = ({
       className="group w-55 md:w-65.5 shrink-0 flex flex-col relative pb-4"
     >
       <div className="relative w-full aspect-4/5 bg-[#F3F5F7] flex items-center justify-center overflow-hidden rounded">
-        <img
-          className="w-full h-full object-cover object-center mix-blend-multiply"
+        <Image
           src={card.img}
           alt={card.title}
+          fill
+          unoptimized
+          className="w-full h-full object-cover object-center mix-blend-multiply"
         />
         <div className="w-full absolute top-0 p-3 md:p-4 flex justify-between items-start">
           <div className="flex flex-col gap-2">

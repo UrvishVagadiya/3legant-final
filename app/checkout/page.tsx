@@ -15,7 +15,7 @@ import { createClient } from "@/utils/supabase/client";
 import { F, billingKeys, initialForm, applyAddr } from "@/utils/checkoutForm";
 
 export default function Checkout() {
-  const { items: cartItems, updateQuantity, shippingMethod } = useCartStore();
+  const { items: cartItems, updateQuantity, shippingMethod, setShippingMethod } = useCartStore();
   const isMounted = useIsMounted();
   const [useDifferentBilling, setUseDifferentBilling] = useState(false);
   const [savedShipping, setSavedShipping] = useState<SavedAddress[]>([]);
@@ -39,27 +39,82 @@ export default function Checkout() {
       const supabase = createClient();
       const { data: u } = await supabase.auth.getUser();
       if (!u?.user) return;
-      setFormData((p) => ({ ...p, email: u.user.email || p.email }));
+      const user = u.user;
+      const meta = user.user_metadata || {};
+
+      // Try multiple metadata keys for names
+      let fName = meta.first_name || meta.given_name || "";
+      let lName = meta.last_name || meta.family_name || "";
+
+      // Also split full names if we are missing any part
+      const nameFromMeta = meta.name || meta.full_name || "";
+      if (nameFromMeta) {
+        const parts = nameFromMeta.split(" ");
+        if (!fName) fName = parts[0] || "";
+        if (!lName) lName = parts.slice(1).join(" ") || "";
+      }
+
+      // Try user_profiles table as another fallback if still missing
+      if (!fName || !lName) {
+        const { data: profile } = await supabase
+          .from("user_profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single();
+
+        if (profile?.full_name) {
+          const parts = profile.full_name.split(" ");
+          if (!fName) fName = parts[0] || "";
+          if (!lName) lName = parts.slice(1).join(" ") || "";
+        }
+      }
+
+      setFormData((p) => ({
+        ...p,
+        email: user.email || p.email,
+        firstName: fName || p.firstName,
+        lastName: lName || p.lastName,
+        // Also pre-fill billing names for consistency
+        billingFirstName: fName || p.billingFirstName,
+        billingLastName: lName || p.billingLastName,
+      }));
+
       const { data } = await supabase
         .from("user_addresses")
         .select("*")
-        .eq("user_id", u.user.id)
+        .eq("user_id", user.id)
         .order("is_default", { ascending: false })
         .order("created_at", { ascending: false });
+
       if (!data?.length) return;
       const ship = data.filter((a: SavedAddress) => a.type === "shipping");
       const bill = data.filter((a: SavedAddress) => a.type === "billing");
       setSavedShipping(ship);
       setSavedBilling(bill);
+
       const ds = ship.find((a: SavedAddress) => a.is_default) || ship[0];
       if (ds) {
         setSelShippingId(ds.id);
-        setFormData((p) => ({ ...p, ...applyAddr(ds, false) }));
+        const addrData = applyAddr(ds, false);
+        setFormData((p) => ({
+          ...p,
+          ...addrData,
+          // If address is missing name/email, keep our fetched ones
+          firstName: addrData.firstName || p.firstName,
+          lastName: addrData.lastName || p.lastName,
+          email: addrData.email || p.email,
+        }));
       }
       const db = bill.find((a: SavedAddress) => a.is_default) || bill[0];
       if (db) {
         setSelBillingId(db.id);
-        setFormData((p) => ({ ...p, ...applyAddr(db, true) }));
+        const billData = applyAddr(db, true);
+        setFormData((p) => ({
+          ...p,
+          ...billData,
+          billingFirstName: billData.billingFirstName || p.billingFirstName,
+          billingLastName: billData.billingLastName || p.billingLastName,
+        }));
       }
     })();
   }, []);
@@ -159,6 +214,7 @@ export default function Checkout() {
             couponLoading={checkout.couponLoading}
             appliedCoupon={checkout.appliedCoupon}
             onRemoveCoupon={checkout.removeCoupon}
+            setShippingMethod={setShippingMethod}
             placing={checkout.placing}
             onPlaceOrder={handlePlaceOrder}
           />

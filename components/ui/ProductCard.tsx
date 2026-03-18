@@ -2,6 +2,7 @@
 import { GoHeart, GoHeartFill } from "react-icons/go";
 import { IoMdStar, IoMdStarHalf, IoMdStarOutline } from "react-icons/io";
 import Link from "next/link";
+import Image from "next/image";
 import { isOfferExpired } from "@/utils/isOfferExpired";
 
 interface ProductCardProps {
@@ -80,10 +81,12 @@ const ProductCard = ({
   const card = (
     <div className="group relative flex flex-col">
       <div className="relative bg-[#F3F5F7] flex items-center justify-center overflow-hidden rounded w-full aspect-4/5">
-        <img
-          className="w-full h-full object-cover object-center mix-blend-multiply"
+        <Image
           src={image}
           alt={title}
+          fill
+          unoptimized
+          className="w-full h-full object-cover object-center mix-blend-multiply"
         />
 
         <div

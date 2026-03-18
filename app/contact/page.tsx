@@ -63,7 +63,7 @@ const ContactUs = () => {
         </div>
         <div className="flex flex-col gap-5">
           <h1 className="text-[36px] md:text-[54px] w-full md:w-[70%] leading-10 md:leading-14.5 font-medium">
-            We believe in sustainable decor. We’re passionate about life at
+            We believe in sustainable decor. We're passionate about life at
             home.
           </h1>
           <p className="text-[14px] md:text-[16px] leading-5.5 md:leading-6.5 w-full md:w-[72%]">

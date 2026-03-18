@@ -104,7 +104,7 @@ const AccountContent = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-8 xl:px-40 py-10 md:py-20">
+    <div className="w-full px-5 md:px-10 lg:px-40 py-10 md:py-20">
       <h1 className="text-center text-4xl md:text-[54px] font-medium mb-10 md:mb-20">
         My Account
       </h1>

@@ -3,6 +3,7 @@ import { GoHeart, GoHeartFill } from "react-icons/go";
 import { RatingStars } from "@/components/ui/ProductCard";
 import Link from "next/link";
 import { isOfferExpired } from "@/utils/isOfferExpired";
+import Image from "next/image";
 
 interface Product {
   id: number;
@@ -57,10 +58,12 @@ const ShopProductCard = ({
       <div
         className={`relative bg-[#F3F5F7] flex items-center justify-center overflow-hidden rounded w-full aspect-4/5 ${isHorizontal ? "lg:w-65 lg:shrink-0 lg:aspect-square" : ""}`}
       >
-        <img
-          className="w-full h-full object-cover object-center mix-blend-multiply"
+        <Image
           src={card.img}
           alt={card.title}
+          fill
+          unoptimized
+          className="object-cover object-center w-full h-full mix-blend-multiply"
         />
 
         <div className="w-full absolute top-0 p-3 flex justify-between items-start z-10">

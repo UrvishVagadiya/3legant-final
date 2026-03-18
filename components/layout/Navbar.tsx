@@ -4,7 +4,7 @@ import { CircleUserRound, Handbag, Menu, Search, LogOut } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useCartStore } from "../../store/cartStore";
 import { useIsMounted } from "@/hooks/useIsMounted";
 import SearchOverlay from "./SearchOverlay";
@@ -15,6 +15,7 @@ const Navbar = () => {
   const [user, setUser] = useState<any>(null);
   const supabase = createClient();
   const router = useRouter();
+  const pathname = usePathname();
   const { toggleCart, items } = useCartStore();
 
   const cartItemCount = items.length;
@@ -64,24 +65,35 @@ const Navbar = () => {
         </Link>
       </div>
       <div className="hidden md:flex items-center gap-6 lg:gap-10 text-sm font-medium text-[#6C7275]">
-        <Link href={"/"} className="text-[#141718]">
+        <Link
+          href={"/"}
+          className={`${
+            pathname === "/" ? "text-[#141718] font-bold" : "text-[#6C7275] hover:text-[#141718]"
+          } transition-colors duration-300 ease-in-out`}
+        >
           Home
         </Link>
         <Link
           href={"/shop"}
-          className="hover:text-[#141718] transition-colors duration-300 ease-in-out"
+          className={`${
+            pathname.startsWith("/shop") ? "text-[#141718] font-bold" : "text-[#6C7275] hover:text-[#141718]"
+          } transition-colors duration-300 ease-in-out`}
         >
           Shop
         </Link>
         <Link
           href={"/blogs"}
-          className="hover:text-[#141718] transition-colors duration-300 ease-in-out"
+          className={`${
+            pathname.startsWith("/blogs") ? "text-[#141718] font-bold" : "text-[#6C7275] hover:text-[#141718]"
+          } transition-colors duration-300 ease-in-out`}
         >
           Blog
         </Link>
         <Link
           href={"/contact"}
-          className="hover:text-[#141718] transition-colors duration-300 ease-in-out"
+          className={`${
+            pathname.startsWith("/contact") ? "text-[#141718] font-bold" : "text-[#6C7275] hover:text-[#141718]"
+          } transition-colors duration-300 ease-in-out`}
         >
           Contact Us
         </Link>

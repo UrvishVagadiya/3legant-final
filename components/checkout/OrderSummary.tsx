@@ -24,9 +24,16 @@ interface OrderSummaryProps {
   couponLoading: boolean;
   appliedCoupon: { id: string; code: string } | null;
   onRemoveCoupon: () => void;
+  setShippingMethod: (method: string) => void;
   placing: boolean;
   onPlaceOrder: () => void;
 }
+
+const shippingOptions = [
+  { value: "free", label: "Free shipping", price: 0, priceLabel: "$0.00" },
+  { value: "express", label: "Express shipping", price: 15, priceLabel: "+$15.00" },
+  { value: "pickup", label: "Pick Up", price: 21, priceLabel: "$21.00" },
+];
 
 export default function OrderSummary({
   cartItems,
@@ -41,6 +48,7 @@ export default function OrderSummary({
   couponLoading,
   appliedCoupon,
   onRemoveCoupon,
+  setShippingMethod,
   placing,
   onPlaceOrder,
 }: OrderSummaryProps) {
@@ -110,6 +118,32 @@ export default function OrderSummary({
         >
           {couponLoading ? "..." : "Apply"}
         </button>
+      </div>
+
+      <div className="space-y-3 mb-6">
+        {shippingOptions.map((opt) => (
+          <label
+            key={opt.value}
+            className={`flex items-center justify-between border rounded p-3 cursor-pointer transition-colors ${
+              shippingMethod === opt.value
+                ? "border-black bg-gray-50"
+                : "border-gray-200 hover:border-gray-400"
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <input
+                type="radio"
+                name="shipping"
+                value={opt.value}
+                checked={shippingMethod === opt.value}
+                onChange={() => setShippingMethod(opt.value)}
+                className="w-4 h-4 text-black focus:ring-black border-gray-300 accent-black"
+              />
+              <span className="text-sm font-medium">{opt.label}</span>
+            </div>
+            <span className="text-sm font-medium">{opt.priceLabel}</span>
+          </label>
+        ))}
       </div>
 
       <div className="space-y-3 border-b border-gray-200 pb-4 mb-4">

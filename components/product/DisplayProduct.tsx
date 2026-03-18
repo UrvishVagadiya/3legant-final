@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { MdKeyboardArrowRight } from "react-icons/md";
 import { IoMdStar, IoMdStarOutline, IoMdStarHalf } from "react-icons/io";
@@ -144,9 +145,11 @@ export const DisplayProduct = ({ p }: { p: any }) => {
                   </span>
                 )}
               </div>
-              <img
+              <Image
                 src={img}
                 alt="Product view 1"
+                fill
+                unoptimized
                 className="w-full h-full max-w-full object-cover object-center"
               />
             </div>
@@ -155,9 +158,11 @@ export const DisplayProduct = ({ p }: { p: any }) => {
                 key={n}
                 className="relative w-full aspect-3/4 bg-[#F3F5F7] hidden sm:block"
               >
-                <img
+                <Image
                   src={refImages[n]}
                   alt={`Product view ${n + 1}`}
+                  fill
+                  unoptimized
                   className="w-full h-full max-w-full object-cover object-center"
                 />
               </div>

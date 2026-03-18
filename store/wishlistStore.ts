@@ -53,7 +53,6 @@ export const useWishlistStore = create<WishlistState>()(
 
             removeFromWishlist: (id) => {
                 set((state) => ({ items: state.items.filter((item) => item.id != id) }));
-                // Remove from DB
                 (async () => {
                     const user = await getUser();
                     if (!user) return;
@@ -71,7 +70,6 @@ export const useWishlistStore = create<WishlistState>()(
                 if (!user) return;
                 const supabase = createClient();
                 const items = get().items;
-                // Clear and re-insert
                 await supabase.from('wishlist').delete().eq('user_id', user.id);
                 if (items.length === 0) return;
                 const rows = items.map(item => ({

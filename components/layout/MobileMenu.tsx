@@ -3,6 +3,7 @@
 import { X, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import MobileSearch from "./MobileSearch";
 import MobileMenuFooter from "./MobileMenuFooter";
 
@@ -32,6 +33,7 @@ const navItems = [
 
 const MobileMenu = ({ isOpen, onClose, user }: MobileMenuProps) => {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const pathname = usePathname() || "";
 
   useEffect(() => {
     if (isOpen) {
@@ -105,7 +107,11 @@ const MobileMenu = ({ isOpen, onClose, user }: MobileMenuProps) => {
                         openDropdown === item.label ? null : item.label,
                       )
                     }
-                    className="flex items-center justify-between w-full py-3.5 text-sm font-medium text-[#141718]"
+                    className={`flex items-center justify-between w-full py-3.5 text-sm ${
+                      item.children.some(c => pathname.startsWith(c.href.split('?')[0]))
+                        ? "text-[#141718] font-bold"
+                        : "text-[#141718] font-medium"
+                    }`}
                   >
                     {item.label}
                     <ChevronDown
@@ -116,16 +122,22 @@ const MobileMenu = ({ isOpen, onClose, user }: MobileMenuProps) => {
                   </button>
                   {openDropdown === item.label && (
                     <div className="pb-3 pl-4 flex flex-col gap-2">
-                      {item.children.map((child) => (
-                        <Link
-                          key={child.href}
-                          href={child.href}
-                          onClick={onClose}
-                          className="text-sm text-[#6C7275] hover:text-[#141718] transition-colors py-1"
-                        >
-                          {child.label}
-                        </Link>
-                      ))}
+                      {item.children.map((child) => {
+                        const baseHref = child.href.split('?')[0];
+                        const isActive = baseHref === "/" ? pathname === "/" : pathname.startsWith(baseHref);
+                        return (
+                          <Link
+                            key={child.href}
+                            href={child.href}
+                            onClick={onClose}
+                            className={`text-sm py-1 transition-colors ${
+                              isActive ? "text-[#141718] font-bold" : "text-[#6C7275] hover:text-[#141718]"
+                            }`}
+                          >
+                            {child.label}
+                          </Link>
+                        );
+                      })}
                     </div>
                   )}
                 </>
@@ -133,7 +145,11 @@ const MobileMenu = ({ isOpen, onClose, user }: MobileMenuProps) => {
                 <Link
                   href={item.href!}
                   onClick={onClose}
-                  className="block py-3.5 text-sm font-medium text-[#141718]"
+                  className={`block py-3.5 text-sm ${
+                    (item.href === "/" ? pathname === "/" : pathname.startsWith(item.href!))
+                      ? "text-[#141718] font-bold"
+                      : "text-[#141718] font-medium"
+                  }`}
                 >
                   {item.label}
                 </Link>

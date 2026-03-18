@@ -8,15 +8,21 @@ import {
   Order,
 } from "./OrderDetailParts";
 
-const statusOptions = [
-  "pending",
-  "confirmed",
-  "processing",
-  "shipped",
-  "delivered",
-  "cancelled",
-  "refunded",
-];
+const badgeStyles: Record<string, { bg: string; text: string; dot: string; border: string }> = {
+  // Order Statuses
+  delivered: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", border: "border-emerald-100" },
+  shipped: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500", border: "border-blue-100" },
+  confirmed: { bg: "bg-indigo-50", text: "text-indigo-700", dot: "bg-indigo-500", border: "border-indigo-100" },
+  processing: { bg: "bg-sky-50", text: "text-sky-700", dot: "bg-sky-500", border: "border-sky-100" },
+  pending: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500", border: "border-amber-100" },
+  cancelled: { bg: "bg-rose-50", text: "text-rose-700", dot: "bg-rose-500", border: "border-rose-100" },
+  refunded: { bg: "bg-purple-50", text: "text-purple-700", dot: "bg-purple-500", border: "border-purple-100" },
+  // Payment Statuses
+  completed: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", border: "border-emerald-100" },
+  succeeded: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", border: "border-emerald-100" },
+  failed: { bg: "bg-rose-50", text: "text-rose-700", dot: "bg-rose-500", border: "border-rose-100" },
+  unknown: { bg: "bg-slate-50", text: "text-slate-600", dot: "bg-slate-400", border: "border-slate-100" },
+};
 
 interface OrderItem {
   id: string;
@@ -114,18 +120,21 @@ export default function OrderDetailModal({
               <label className="block text-xs font-semibold text-[#6C7275] mb-1 uppercase">
                 Order Status (Delivery)
               </label>
-              <select
-                value={order.status}
-                onChange={(e) => onUpdateStatus(order.id, e.target.value)}
-                disabled={order.status === "refunded"}
-                className={`w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-[#141718] ${order.status === "refunded" ? "opacity-80 cursor-not-allowed bg-purple-50" : ""}`}
-              >
-                {statusOptions.map((s) => (
-                  <option key={s} value={s}>
-                    {s.charAt(0).toUpperCase() + s.slice(1)}
-                  </option>
-                ))}
-              </select>
+              <div className={`flex items-center gap-3 w-full border border-gray-200 rounded-lg px-4 py-2 bg-white shadow-sm ${(badgeStyles[order.status.toLowerCase()] || badgeStyles.unknown).bg}`}>
+                <div className={`w-2 h-2 rounded-full ${(badgeStyles[order.status.toLowerCase()] || badgeStyles.unknown).dot} animate-pulse shrink-0`} />
+                <select
+                  value={order.status}
+                  onChange={(e) => onUpdateStatus(order.id, e.target.value)}
+                  disabled={order.status === "refunded"}
+                  className={`flex-1 bg-transparent text-sm font-black uppercase tracking-widest outline-none cursor-pointer ${(badgeStyles[order.status.toLowerCase()] || badgeStyles.unknown).text} ${order.status === "refunded" ? "opacity-80 cursor-not-allowed" : ""}`}
+                >
+                  {["pending", "confirmed", "processing", "shipped", "delivered", "cancelled", "refunded"].map((s) => (
+                    <option key={s} value={s} className="uppercase">
+                      {s.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             <div>
               <label className="block text-xs font-semibold text-[#6C7275] mb-1 uppercase">
@@ -162,8 +171,11 @@ export default function OrderDetailModal({
               <label className="block text-xs font-semibold text-[#6C7275] mb-1 uppercase">
                 Payment Status
               </label>
-              <div className="w-full border border-gray-200 bg-gray-50 rounded-lg px-4 py-2.5 text-sm font-medium capitalize text-[#141718]">
-                {order.payment_status}
+              <div className={`flex items-center gap-3 w-full border border-gray-200 rounded-lg px-4 py-2.5 bg-white shadow-sm ${(badgeStyles[order.payment_status.toLowerCase()] || badgeStyles.unknown).bg}`}>
+                <div className={`w-2 h-2 rounded-full ${(badgeStyles[order.payment_status.toLowerCase()] || badgeStyles.unknown).dot} animate-pulse shrink-0`} />
+                <span className={`text-sm font-black uppercase tracking-widest ${(badgeStyles[order.payment_status.toLowerCase()] || badgeStyles.unknown).text}`}>
+                  {order.payment_status}
+                </span>
               </div>
             </div>
           </div>
