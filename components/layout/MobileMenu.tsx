@@ -6,34 +6,39 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import MobileSearch from "./MobileSearch";
 import MobileMenuFooter from "./MobileMenuFooter";
+import { useAuth } from "@/context/AuthContext";
 
 interface MobileMenuProps {
   isOpen: boolean;
   onClose: () => void;
-  user: any;
 }
 
-const navItems = [
-  { label: "Home", href: "/" },
-  {
-    label: "Shop",
-    children: [
-      { label: "All Products", href: "/shop" },
-      { label: "Living Room", href: "/shop?category=Living+Room" },
-      { label: "Bedroom", href: "/shop?category=Bedroom" },
-      { label: "Kitchen", href: "/shop?category=Kitchen" },
-    ],
-  },
-  {
-    label: "Product",
-    children: [{ label: "Product Page", href: "/product" }],
-  },
-  { label: "Contact Us", href: "/contact" },
-];
-
-const MobileMenu = ({ isOpen, onClose, user }: MobileMenuProps) => {
+const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
+  const { user, role } = useAuth();
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const pathname = usePathname() || "";
+
+  const navItems = [
+    { label: "Home", href: "/" },
+    {
+      label: "Shop",
+      children: [
+        { label: "All Products", href: "/shop" },
+        { label: "Living Room", href: "/shop?category=Living+Room" },
+        { label: "Bedroom", href: "/shop?category=Bedroom" },
+        { label: "Kitchen", href: "/shop?category=Kitchen" },
+      ],
+    },
+    {
+      label: "Product",
+      children: [{ label: "Product Page", href: "/product" }],
+    },
+    { label: "Contact Us", href: "/contact" },
+  ];
+
+  if (role === "admin") {
+    navItems.push({ label: "Admin", href: "/admin" });
+  }
 
   useEffect(() => {
     if (isOpen) {

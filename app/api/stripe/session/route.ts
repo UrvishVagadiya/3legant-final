@@ -42,6 +42,27 @@ export async function GET(req: NextRequest) {
             payment = data;
         }
 
+        // Reconstruct items with full details
+        const productIds = items.map((i: any) => i.id || i.product_id);
+        const { data: products } = await admin
+            .from("products")
+            .select("id, title, img, price")
+            .in("id", productIds);
+        const productMap = new Map(products?.map(p => [p.id, p]) || []);
+
+        const fullItems = items.map((item: any) => {
+            const productId = item.id || item.product_id;
+            const dbProduct = productMap.get(productId);
+            return {
+                id: productId,
+                name: item.name || item.product_name || dbProduct?.title || "Unknown Product",
+                image: item.image || item.product_image || dbProduct?.img || "",
+                price: item.prc || item.price || item.unit_price || dbProduct?.price || 0,
+                quantity: item.qty || item.quantity || 1,
+                color: item.clr || item.color || "Default",
+            };
+        });
+
         // If order doesn't exist yet, create it now (webhook may not have fired)
         if (!payment && userId) {
             const orderCode = `#${Date.now().toString().slice(-10)}`;
@@ -51,8 +72,8 @@ export async function GET(req: NextRequest) {
             let total = parseFloat(meta.total || "0");
 
             // Backend Robustness: If total is 0, recalculate from items
-            if (total === 0 && items.length > 0) {
-                subtotal = items.reduce((acc: number, item: any) => acc + (Number(item.price) * item.quantity), 0);
+            if (total === 0 && fullItems.length > 0) {
+                subtotal = fullItems.reduce((acc: number, item: any) => acc + (Number(item.price) * item.quantity), 0);
                 total = subtotal + shippingCost - discountAmount;
             }
 
@@ -100,10 +121,10 @@ export async function GET(req: NextRequest) {
             if (orderError) {
                 console.error("Failed to create order:", orderError);
                 return NextResponse.json({
-                    items,
-                    subtotal: parseFloat(meta.subtotal || "0"),
-                    discount: parseFloat(meta.discount || "0"),
-                    total: parseFloat(meta.total || "0"),
+                    items: fullItems,
+                    subtotal,
+                    discount: discountAmount,
+                    total,
                     paymentMethod: "Credit Card (Stripe)",
                     orderCode: `#${Date.now().toString().slice(-10)}`,
                     date: new Date().toLocaleDateString("en-US", {
@@ -117,16 +138,9 @@ export async function GET(req: NextRequest) {
             }
 
             // Create order items
-            if (items.length > 0) {
-                const orderItems = items.map(
-                    (item: {
-                        id: string;
-                        name: string;
-                        image: string;
-                        color: string;
-                        quantity: number;
-                        price: number;
-                    }) => ({
+            if (fullItems.length > 0) {
+                const orderItems = fullItems.map(
+                    (item: any) => ({
                         order_id: order.id,
                         product_id: item.id,
                         product_name: item.name,
@@ -208,7 +222,7 @@ export async function GET(req: NextRequest) {
             await admin.from("cart").delete().eq("user_id", userId);
 
             return NextResponse.json({
-                items,
+                items: fullItems,
                 subtotal,
                 discount: discountAmount,
                 total,
@@ -248,13 +262,13 @@ export async function GET(req: NextRequest) {
                 day: "numeric",
             });
 
-        const finalSubtotal = parseFloat(meta.subtotal || "0") || items.reduce((acc: number, item: any) => acc + (Number(item.price) * item.quantity), 0);
+        const finalSubtotal = parseFloat(meta.subtotal || "0") || fullItems.reduce((acc: number, item: any) => acc + (Number(item.price) * item.quantity), 0);
         const finalDiscount = parseFloat(meta.discount || "0");
         const finalShipping = parseFloat(meta.shipping_cost || "0");
         const finalTotal = parseFloat(meta.total || "0") || (finalSubtotal + finalShipping - finalDiscount);
 
         return NextResponse.json({
-            items,
+            items: fullItems,
             subtotal: finalSubtotal,
             discount: finalDiscount,
             total: finalTotal,

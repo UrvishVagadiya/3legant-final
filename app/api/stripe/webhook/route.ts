@@ -71,7 +71,11 @@ export async function POST(req: NextRequest) {
 
             // Backend Robustness: If total is 0, recalculate from items
             if (total === 0 && items.length > 0) {
-                subtotal = items.reduce((acc: number, item: any) => acc + (Number(item.price) * item.quantity), 0);
+                subtotal = items.reduce((acc: number, item: any) => {
+                    const price = item.prc || item.price || 0;
+                    const quantity = item.qty || item.quantity || 0;
+                    return acc + (Number(price) * quantity);
+                }, 0);
                 total = subtotal + shippingCost - discountAmount;
             }
 
@@ -122,24 +126,40 @@ export async function POST(req: NextRequest) {
             }
 
             // Create order items
-            const orderItems = items.map(
-                (item: {
-                    id: string;
-                    name: string;
-                    image: string;
-                    color: string;
-                    quantity: number;
-                    price: number;
-                }) => ({
-                    order_id: order.id,
-                    product_id: item.id,
-                    product_name: item.name,
-                    product_image: item.image,
-                    color: item.color,
-                    quantity: item.quantity,
-                    unit_price: Number(item.price),
-                    total_price: Number(item.price) * item.quantity,
-                })
+            const parsedItems = JSON.parse(meta.items_json || "[]");
+            
+            // Fetch missing product details (name/image) from DB if not in metadata
+            const productIds = parsedItems.map((i: any) => i.id || i.product_id);
+            const { data: products } = await admin
+                .from("products")
+                .select("id, title, img, price")
+                .in("id", productIds);
+
+            const productMap = new Map(products?.map(p => [p.id, p]) || []);
+
+            const orderItems = parsedItems.map(
+                (item: any) => {
+                    const productId = item.id || item.product_id;
+                    const dbProduct = productMap.get(productId);
+                    
+                    // Priority: metadata > database > fallback
+                    const name = item.name || item.product_name || dbProduct?.title || "Unknown Product";
+                    const image = item.image || item.product_image || dbProduct?.img || "";
+                    const price = item.prc || item.price || item.unit_price || dbProduct?.price || 0;
+                    const quantity = item.qty || item.quantity || 1;
+                    const color = item.clr || item.color || "Default";
+
+                    return {
+                        order_id: order.id,
+                        product_id: productId,
+                        product_name: name,
+                        product_image: image,
+                        color: color,
+                        quantity: quantity,
+                        unit_price: Number(price),
+                        total_price: Number(price) * quantity,
+                    };
+                }
             );
 
             const { error: itemsError } = await admin

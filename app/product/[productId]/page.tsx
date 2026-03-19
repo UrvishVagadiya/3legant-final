@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { initialCartItems } from "@/constants/products";
 
+import { ProductDetailsSkeleton } from "@/components/ui/ProductDetailsSkeleton";
+
 export default function ProductPage() {
   const { productId } = useParams<{ productId: string }>();
   const [product, setProduct] = useState<any>(null);
@@ -54,11 +56,7 @@ export default function ProductPage() {
   }, [productId]);
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-[50vh]">
-        <div className="w-8 h-8 border-2 border-[#141718] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <ProductDetailsSkeleton />;
   }
 
   if (!product) return null;

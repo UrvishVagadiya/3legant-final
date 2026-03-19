@@ -4,6 +4,8 @@ import { Search, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { useProductSearch } from "@/hooks/useProductSearch";
+import { colorMap } from "../product/ColorSelector";
+import TintedProductImage from "../product/TintedProductImage";
 
 interface SearchOverlayProps {
   isOpen: boolean;
@@ -89,11 +91,13 @@ const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
                     onClick={onClose}
                     className="flex items-center gap-4 py-3 px-2 hover:bg-[#F3F5F7] rounded-lg transition-colors group"
                   >
-                    <div className="w-16 h-16 bg-[#F3F5F7] rounded-md overflow-hidden shrink-0 flex items-center justify-center">
-                      <img
+                    <div className="w-16 h-16 bg-[#F3F5F7] rounded-md overflow-hidden shrink-0 flex items-center justify-center relative">
+                      <TintedProductImage
                         src={product.img}
                         alt={product.title}
-                        className="w-full h-full object-cover object-center mix-blend-multiply"
+                        fill
+                        className="object-cover object-center"
+                        colorHex={(product as any).color ? colorMap[Array.isArray((product as any).color) ? (product as any).color[0] : (product as any).color] : null}
                       />
                     </div>
                     <div className="flex-1 min-w-0">

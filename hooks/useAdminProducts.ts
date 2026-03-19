@@ -29,7 +29,7 @@ export function useAdminProducts() {
             category: p.category || [], isNew: p.isNew || false, description: p.description || "",
             sku: p.sku || "", stock: String(p.stock || 0), color: p.color || [],
             status: p.status || "active", measurements: p.measurements || "",
-            weight: p.weight || "", img: p.img || "",
+            weight: p.weight || "", valid_until: p.valid_until ? p.valid_until.slice(0, 16) : "",
         });
         setImageFile(null);
         setShowForm(true);
@@ -60,7 +60,7 @@ export function useAdminProducts() {
                 discount: mrpNum && mrpNum > priceNum ? `-${Math.round(((mrpNum - priceNum) / mrpNum) * 100)}%` : null,
                 description: formData.description || null, sku: formData.sku || null, stock: Number(formData.stock) || 0,
                 color: formData.color, status: formData.status, measurements: formData.measurements || null,
-                weight: formData.weight || null,
+                weight: formData.weight || null, valid_until: formData.valid_until ? new Date(formData.valid_until).toISOString() : null,
             };
             if (mrpNum) productData.mrp = mrpNum;
             if (imageUrl) productData.img = imageUrl;

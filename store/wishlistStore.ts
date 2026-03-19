@@ -14,18 +14,13 @@ export interface WishlistItem {
 interface WishlistState {
     items: WishlistItem[];
     syncing: boolean;
-    addToWishlist: (item: WishlistItem) => void;
-    removeFromWishlist: (id: number | string) => void;
+    addToWishlist: (item: WishlistItem, user?: any) => void;
+    removeFromWishlist: (id: number | string, user?: any) => void;
     isInWishlist: (id: number | string) => boolean;
-    syncWishlistToDb: () => Promise<void>;
-    loadWishlistFromDb: () => Promise<void>;
+    syncWishlistToDb: (user?: any) => Promise<void>;
+    loadWishlistFromDb: (user?: any) => Promise<void>;
 }
 
-async function getUser() {
-    const supabase = createClient();
-    const { data } = await supabase.auth.getUser();
-    return data?.user ?? null;
-}
 
 export const useWishlistStore = create<WishlistState>()(
     persist(
@@ -33,40 +28,35 @@ export const useWishlistStore = create<WishlistState>()(
             items: [],
             syncing: false,
 
-            addToWishlist: (item) => {
+            addToWishlist: (item, user?: any) => {
                 set((state) => {
                     if (!state.items.find((i) => i.id == item.id)) {
                         return { items: [...state.items, item] };
                     }
                     return state;
                 });
-                (async () => {
-                    const user = await getUser();
-                    if (!user) return;
+                if (user) {
                     const supabase = createClient();
-                    await supabase.from('wishlist').upsert({
+                    supabase.from('wishlist').upsert({
                         user_id: user.id,
                         product_id: String(item.id),
-                    }, { onConflict: 'user_id,product_id' });
-                })();
+                    }, { onConflict: 'user_id,product_id' }).then();
+                }
             },
 
-            removeFromWishlist: (id) => {
+            removeFromWishlist: (id, user?: any) => {
                 set((state) => ({ items: state.items.filter((item) => item.id != id) }));
-                (async () => {
-                    const user = await getUser();
-                    if (!user) return;
+                if (user) {
                     const supabase = createClient();
-                    await supabase.from('wishlist').delete()
+                    supabase.from('wishlist').delete()
                         .eq('user_id', user.id)
-                        .eq('product_id', String(id));
-                })();
+                        .eq('product_id', String(id)).then();
+                }
             },
 
             isInWishlist: (id) => get().items.some((item) => item.id == id),
 
-            syncWishlistToDb: async () => {
-                const user = await getUser();
+            syncWishlistToDb: async (user?: any) => {
                 if (!user) return;
                 const supabase = createClient();
                 const items = get().items;
@@ -79,8 +69,7 @@ export const useWishlistStore = create<WishlistState>()(
                 await supabase.from('wishlist').insert(rows);
             },
 
-            loadWishlistFromDb: async () => {
-                const user = await getUser();
+            loadWishlistFromDb: async (user?: any) => {
                 if (!user) return;
                 set({ syncing: true });
                 const supabase = createClient();

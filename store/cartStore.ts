@@ -18,20 +18,15 @@ interface CartState {
     shippingMethod: string;
     syncing: boolean;
     toggleCart: () => void;
-    addToCart: (item: Omit<CartItem, 'quantity'>) => void;
-    removeFromCart: (id: string, color: string) => void;
-    updateQuantity: (id: string, color: string, quantity: number) => void;
     setShippingMethod: (method: string) => void;
-    clearCart: () => void;
-    syncCartToDb: () => Promise<void>;
-    loadCartFromDb: () => Promise<void>;
+    clearCart: (user?: any) => void;
+    syncCartToDb: (user?: any) => Promise<void>;
+    loadCartFromDb: (user?: any) => Promise<void>;
+    addToCart: (item: Omit<CartItem, 'quantity'>, user?: any) => void;
+    removeFromCart: (id: string, color: string, user?: any) => void;
+    updateQuantity: (id: string, color: string, quantity: number, user?: any) => void;
 }
 
-async function getUser() {
-    const supabase = createClient();
-    const { data } = await supabase.auth.getUser();
-    return data?.user ?? null;
-}
 
 export const useCartStore = create<CartState>()(
     persist(
@@ -43,7 +38,7 @@ export const useCartStore = create<CartState>()(
             toggleCart: () => set((state) => ({ isCartOpen: !state.isCartOpen })),
             setShippingMethod: (method) => set({ shippingMethod: method }),
 
-            addToCart: (item) => {
+            addToCart: (item, user?: any) => {
                 const safeItem = { ...item, price: Number(item.price) };
                 set((state) => {
                     const existingItem = state.items.find(i => i.id === safeItem.id && i.color === safeItem.color);
@@ -55,33 +50,29 @@ export const useCartStore = create<CartState>()(
                 toast.success(`${item.name} added to cart!`, {
                     style: { borderRadius: '8px', background: '#141718', color: '#fff' },
                 });
-                get().syncCartToDb();
+                get().syncCartToDb(user);
             },
 
-            removeFromCart: (id, color) => {
+            removeFromCart: (id, color, user?: any) => {
                 set((state) => ({ items: state.items.filter(i => !(i.id === id && i.color === color)) }));
-                get().syncCartToDb();
+                get().syncCartToDb(user);
             },
 
-            updateQuantity: (id, color, quantity) => {
+            updateQuantity: (id, color, quantity, user?: any) => {
                 set((state) => ({
                     items: state.items.map(i => (i.id === id && i.color === color) ? { ...i, quantity: Math.max(1, quantity) } : i)
                 }));
-                get().syncCartToDb();
+                get().syncCartToDb(user);
             },
 
-            clearCart: () => {
+            clearCart: async (user?: any) => {
                 set({ items: [] });
-                (async () => {
-                    const user = await getUser();
-                    if (!user) return;
-                    const supabase = createClient();
-                    await supabase.from('cart').delete().eq('user_id', user.id);
-                })();
+                if (!user) return;
+                const supabase = createClient();
+                await supabase.from('cart').delete().eq('user_id', user.id);
             },
 
-            syncCartToDb: async () => {
-                const user = await getUser();
+            syncCartToDb: async (user?: any) => {
                 if (!user) return;
                 const supabase = createClient();
                 const items = get().items;
@@ -99,8 +90,7 @@ export const useCartStore = create<CartState>()(
                 await supabase.from('cart').insert(rows);
             },
 
-            loadCartFromDb: async () => {
-                const user = await getUser();
+            loadCartFromDb: async (user?: any) => {
                 if (!user) return;
                 set({ syncing: true });
                 const supabase = createClient();

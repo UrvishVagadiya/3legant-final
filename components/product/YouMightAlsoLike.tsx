@@ -18,7 +18,7 @@ export default function YouMightAlsoLike() {
 
   useEffect(() => {
     async function fetchProducts() {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("products")
         .select("*")
         .limit(6);
@@ -27,12 +27,12 @@ export default function YouMightAlsoLike() {
       }
     }
     fetchProducts();
-  }, [supabase]);
+  }, []); // Remove supabase from dependency
 
-  const displayProducts =
-    products.length > 0
-      ? products
-      : [];
+  const displayProducts = useMemo(() => 
+    products.length > 0 ? products : [], 
+    [products]
+  );
 
   const productIds = useMemo(
     () => displayProducts.map((p: any) => p.id),

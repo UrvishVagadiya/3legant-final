@@ -1,8 +1,8 @@
 "use client";
 import { MdKeyboardArrowRight } from "react-icons/md";
 
-const colorMap: Record<string, string> = {
-  Black: "#000000",
+export const colorMap: Record<string, string> = {
+  Black: "#343839",
   White: "#FFFFFF",
   Brown: "#8B4513",
   Red: "#DC2626",

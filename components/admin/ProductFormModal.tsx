@@ -16,7 +16,7 @@ export type ProductFormData = {
   status: string;
   measurements: string;
   weight: string;
-  img: string;
+  valid_until: string;
 };
 
 export const emptyProductForm: ProductFormData = {
@@ -32,7 +32,7 @@ export const emptyProductForm: ProductFormData = {
   status: "active",
   measurements: "",
   weight: "",
-  img: "",
+  valid_until: "",
 };
 
 interface Props {
@@ -43,7 +43,6 @@ interface Props {
   onSubmit: (e: FormEvent) => void;
   onClose: () => void;
   onImageChange: (file: File) => void;
-  imageFile: File | null;
 }
 
 export default function ProductFormModal({
@@ -54,7 +53,6 @@ export default function ProductFormModal({
   onSubmit,
   onClose,
   onImageChange,
-  imageFile,
 }: Props) {
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-start justify-center p-4 overflow-y-auto">
@@ -73,7 +71,6 @@ export default function ProductFormModal({
             setFormData={setFormData}
             editingId={editingId}
             onImageChange={onImageChange}
-            imageFile={imageFile}
           />
           <div className="flex gap-3 pt-2">
             <button

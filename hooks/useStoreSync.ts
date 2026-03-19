@@ -9,32 +9,32 @@ import { useWishlistStore } from "@/store/wishlistStore";
  * Hook that syncs cart/wishlist from Supabase when user is authenticated.
  * Call this once in a top-level layout component.
  */
+import { useAuth } from "@/context/AuthContext";
+
+/**
+ * Hook that syncs cart/wishlist from Supabase when user is authenticated.
+ * Call this once in a top-level layout component.
+ */
 export function useStoreSync() {
+    const { user, isAuthenticated } = useAuth();
     const loadCartFromDb = useCartStore((s) => s.loadCartFromDb);
     const loadWishlistFromDb = useWishlistStore((s) => s.loadWishlistFromDb);
 
-    useEffect(() => {
-        const supabase = createClient();
+    const userId = user?.id;
 
+    useEffect(() => {
         const syncStores = async () => {
-            const { data } = await supabase.auth.getUser();
-            if (data?.user) {
-                await Promise.all([loadCartFromDb(), loadWishlistFromDb()]);
+            if (isAuthenticated && user) {
+                await Promise.all([loadCartFromDb(user), loadWishlistFromDb(user)]);
             }
         };
 
         syncStores();
 
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-            if (event === "SIGNED_IN") {
-                syncStores();
-            }
-            if (event === "SIGNED_OUT") {
-                useCartStore.setState({ items: [] });
-                useWishlistStore.setState({ items: [] });
-            }
-        });
-
-        return () => { subscription.unsubscribe(); };
-    }, [loadCartFromDb, loadWishlistFromDb]);
+        // Handle case where user signs out
+        if (!isAuthenticated) {
+            useCartStore.setState({ items: [] });
+            useWishlistStore.setState({ items: [] });
+        }
+    }, [isAuthenticated, userId, loadCartFromDb, loadWishlistFromDb]);
 }

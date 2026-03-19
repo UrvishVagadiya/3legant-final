@@ -21,7 +21,10 @@ function dbToFormData(address: DbAddress): AddressData {
     };
 }
 
+import { useAuth } from "@/context/AuthContext";
+
 export function useAddresses() {
+    const { user } = useAuth();
     const [addresses, setAddresses] = useState<DbAddress[]>([]);
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
@@ -29,14 +32,13 @@ export function useAddresses() {
     const [modalFixedType, setModalFixedType] = useState<"shipping" | "billing" | undefined>(undefined);
 
     const fetchAddresses = async () => {
-        const supabase = createClient();
-        const { data: userData } = await supabase.auth.getUser();
-        if (!userData?.user) { setLoading(false); return; }
+        if (!user) { setLoading(false); return; }
 
+        const supabase = createClient();
         const { data } = await supabase
             .from("user_addresses")
             .select("*")
-            .eq("user_id", userData.user.id)
+            .eq("user_id", user.id)
             .order("is_default", { ascending: false })
             .order("created_at", { ascending: false });
 
@@ -44,7 +46,7 @@ export function useAddresses() {
         setLoading(false);
     };
 
-    useEffect(() => { fetchAddresses(); }, []);
+    useEffect(() => { fetchAddresses(); }, [user?.id]);
 
     const handleAdd = (type?: "shipping" | "billing") => {
         setEditingAddress(null);
@@ -67,9 +69,8 @@ export function useAddresses() {
 
     const handleSetDefault = async (address: DbAddress) => {
         const supabase = createClient();
-        const { data: userData } = await supabase.auth.getUser();
-        if (!userData?.user) return;
-        await supabase.from("user_addresses").update({ is_default: false }).eq("user_id", userData.user.id).eq("type", address.type);
+        if (!user) return;
+        await supabase.from("user_addresses").update({ is_default: false }).eq("user_id", user.id).eq("type", address.type);
         await supabase.from("user_addresses").update({ is_default: true }).eq("id", address.id);
         await fetchAddresses();
         toast.success("Default address updated");
@@ -77,14 +78,13 @@ export function useAddresses() {
 
     const handleSave = async (data: AddressData) => {
         const supabase = createClient();
-        const { data: userData } = await supabase.auth.getUser();
-        if (!userData?.user) return;
+        if (!user) return;
 
         const nameParts = data.name.split(" ");
         const type = data.type || modalFixedType || "shipping";
 
         const baseRow: Record<string, unknown> = {
-            user_id: userData.user.id,
+            user_id: user.id,
             type,
             first_name: nameParts[0] || "",
             last_name: nameParts.slice(1).join(" ") || "",

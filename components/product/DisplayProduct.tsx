@@ -10,13 +10,14 @@ import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { useIsMounted } from "@/hooks/useIsMounted";
 import YouMightAlsoLike from "./YouMightAlsoLike";
 import CountdownTimer from "./CountdownTimer";
-import ColorSelector from "./ColorSelector";
+import ColorSelector, { colorMap } from "./ColorSelector";
 import { isOfferExpired } from "@/utils/isOfferExpired";
 import ProductActions from "./ProductActions";
 import AccordionItem from "./AccordionItem";
 import AdditionalInfo from "./AdditionalInfo";
 import FAQList from "./FAQList";
 import ReviewsSection, { useProductReviews } from "./ReviewsSection";
+import TintedProductImage from "./TintedProductImage";
 
 const refImages = [
   "/table.png",
@@ -27,7 +28,10 @@ const refImages = [
   "/table5.png",
 ];
 
+import { useAuth } from "@/context/AuthContext";
+
 export const DisplayProduct = ({ p }: { p: any }) => {
+  const { user } = useAuth();
   const isMounted = useIsMounted();
   const [quantity, setQuantity] = useState(1);
   const [openAccordion, setOpenAccordion] = useState<string | null>("");
@@ -61,13 +65,14 @@ export const DisplayProduct = ({ p }: { p: any }) => {
       : parseFloat(String(p.mrp || p.oldprice).replace("$", ""));
   const price = expired && rawMrp > rawPrice ? rawMrp : rawPrice;
   const mrp = expired ? 0 : rawMrp;
-  const img = (p.name?.toLowerCase().includes("table") || p.title?.toLowerCase().includes("table"))
-    ? `/${selectedColor.toLowerCase()}_table.png`
-    : p.img || p.image_url || refImages[0];
+
+  const img = p.img || p.image_url || refImages[0];
+  const colorHex = colorMap[selectedColor] || "#6B7280";
+  const shouldTint = selectedColor.toLowerCase() !== "white";
 
   const handleWishlistToggle = () =>
     requireAuth(() => {
-      if (isInWishlist(pid)) removeFromWishlist(pid);
+      if (isInWishlist(pid)) removeFromWishlist(pid, user);
       else
         addToWishlist({
           id: pid,
@@ -76,7 +81,7 @@ export const DisplayProduct = ({ p }: { p: any }) => {
           MRP: mrp,
           image: refImages[0],
           color: selectedColor,
-        });
+        }, user);
     });
 
   const handleAddToCart = () =>
@@ -87,10 +92,10 @@ export const DisplayProduct = ({ p }: { p: any }) => {
         price,
         image: img,
         color: selectedColor,
-      });
+      }, user);
       if (quantity > 1)
         setTimeout(
-          () => updateQuantity(String(pid), selectedColor, quantity),
+          () => updateQuantity(String(pid), selectedColor, quantity, user),
           0,
         );
     });
@@ -126,7 +131,9 @@ export const DisplayProduct = ({ p }: { p: any }) => {
       <div className="w-full max-w-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 relative overflow-hidden">
         <div className="w-full">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="relative w-full aspect-3/4 bg-[#F3F5F7] group mb-4 sm:mb-0">
+            <div
+              className="relative w-full aspect-3/4 bg-[#F3F5F7] group mb-4 sm:mb-0"
+            >
               <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
                 {p.isNew && (
                   <span className="bg-white text-black text-sm font-bold px-3 py-1 rounded w-fit">
@@ -145,12 +152,13 @@ export const DisplayProduct = ({ p }: { p: any }) => {
                   </span>
                 )}
               </div>
-              <Image
+              <TintedProductImage
                 src={img}
                 alt="Product view 1"
                 fill
                 unoptimized
-                className="w-full h-full max-w-full object-cover object-center"
+                className="w-full h-full max-w-full object-cover object-center transition-all duration-500"
+                colorHex={shouldTint ? colorHex : null}
               />
             </div>
             {[1, 2, 3, 4, 5].map((n) => (
@@ -163,7 +171,7 @@ export const DisplayProduct = ({ p }: { p: any }) => {
                   alt={`Product view ${n + 1}`}
                   fill
                   unoptimized
-                  className="w-full h-full max-w-full object-cover object-center"
+                  className="w-full h-full max-w-full object-cover object-center transition-all duration-500"
                 />
               </div>
             ))}

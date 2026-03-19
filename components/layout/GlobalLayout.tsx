@@ -8,6 +8,7 @@ import Footer from "@/components/layout/Footer";
 import CartDrawer from "@/components/cart/CartDrawer";
 import { useStoreSync } from "@/hooks/useStoreSync";
 
+
 const GlobalLayout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
   useStoreSync();
@@ -19,6 +20,21 @@ const GlobalLayout = ({ children }: { children: React.ReactNode }) => {
   const isResetPassword = pathname === "/reset-password";
   const isAdminPage = pathname.startsWith("/admin");
 
+  const showHeaderNavbar = !isAuthPage && !isResetPassword;
+  const showNewsLetter = !isAuthPage && !isContactPage && !isCartPage && !isAccountPage && !isResetPassword;
+  const showFooter = !isAuthPage && !isResetPassword;
+
+  const layout = (
+    <>
+      {showHeaderNavbar && <Header />}
+      {showHeaderNavbar && <Navbar />}
+      {children}
+      {showNewsLetter && <NewsLetter />}
+      {showFooter && <Footer />}
+      <CartDrawer />
+    </>
+  );
+
   // Admin pages have their own layout
   if (isAdminPage) {
     return <>{children}</>;
@@ -26,16 +42,7 @@ const GlobalLayout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <>
-      {!isAuthPage && <Header /> && !isResetPassword && <Header />}
-      {!isAuthPage && <Navbar /> && !isResetPassword && <Navbar />}
-      {children}
-      {!isAuthPage && <NewsLetter /> &&
-        !isContactPage && <NewsLetter /> &&
-        !isCartPage && <NewsLetter /> &&
-        !isAccountPage && <NewsLetter /> &&
-        !isResetPassword && <NewsLetter />}
-      {!isAuthPage && <Footer /> && !isResetPassword && <Footer />}
-      <CartDrawer />
+      {layout}
     </>
   );
 };

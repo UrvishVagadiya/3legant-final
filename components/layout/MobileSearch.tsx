@@ -4,6 +4,8 @@ import { Search } from "lucide-react";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useProductSearch } from "@/hooks/useProductSearch";
+import { colorMap } from "../product/ColorSelector";
+import TintedProductImage from "../product/TintedProductImage";
 
 interface MobileSearchProps {
   onResultClick: () => void;
@@ -65,11 +67,13 @@ const MobileSearch = ({ onResultClick }: MobileSearchProps) => {
                 onClick={() => handleClick(product.id)}
                 className="flex items-center gap-3 w-full px-3 py-2.5 hover:bg-[#F3F5F7] transition-colors text-left"
               >
-                <div className="w-10 h-10 bg-[#F3F5F7] rounded overflow-hidden shrink-0 flex items-center justify-center">
-                  <img
+                <div className="w-10 h-10 bg-[#F3F5F7] rounded overflow-hidden shrink-0 flex items-center justify-center relative">
+                  <TintedProductImage
                     src={product.img}
                     alt={product.title}
-                    className="w-full h-full object-cover mix-blend-multiply"
+                    fill
+                    className="object-cover"
+                    colorHex={(product as any).color ? colorMap[Array.isArray((product as any).color) ? (product as any).color[0] : (product as any).color] : null}
                   />
                 </div>
                 <div className="flex-1 min-w-0">

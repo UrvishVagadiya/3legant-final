@@ -3,7 +3,8 @@ import { GoHeart, GoHeartFill } from "react-icons/go";
 import { RatingStars } from "@/components/ui/ProductCard";
 import Link from "next/link";
 import { isOfferExpired } from "@/utils/isOfferExpired";
-import Image from "next/image";
+import { colorMap } from "../product/ColorSelector";
+import TintedProductImage from "../product/TintedProductImage";
 
 interface Product {
   id: number;
@@ -50,6 +51,11 @@ const ShopProductCard = ({
   const overlayClass = `${isMobileExtended ? "hidden" : "block"} ${isHorizontal ? "lg:!hidden" : "lg:!block"}`;
   const extendedClass = `${isMobileExtended ? "block" : "hidden"} ${isHorizontal ? "lg:!block" : "lg:!hidden"}`;
 
+    const colorOptions = Array.isArray(card.color) ? card.color : card.color ? [card.color] : [];
+    const firstColor = colorOptions[0];
+    const colorHex = firstColor ? colorMap[firstColor] : null;
+    const shouldTint = firstColor && firstColor.toLowerCase() !== "white";
+
   return (
     <Link
       href={`/product/${card.id}`}
@@ -58,12 +64,13 @@ const ShopProductCard = ({
       <div
         className={`relative bg-[#F3F5F7] flex items-center justify-center overflow-hidden rounded w-full aspect-4/5 ${isHorizontal ? "lg:w-65 lg:shrink-0 lg:aspect-square" : ""}`}
       >
-        <Image
+        <TintedProductImage
           src={card.img}
           alt={card.title}
           fill
           unoptimized
-          className="object-cover object-center w-full h-full mix-blend-multiply"
+          className="object-cover object-center w-full h-full"
+          colorHex={shouldTint ? colorHex : null}
         />
 
         <div className="w-full absolute top-0 p-3 flex justify-between items-start z-10">

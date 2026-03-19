@@ -3,20 +3,17 @@ import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import toast from "react-hot-toast";
 
+import { useAuth } from "@/context/AuthContext";
+
 export function useAuthGuard() {
     const router = useRouter();
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-
-    useEffect(() => {
-        const supabase = createClient();
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setIsAuthenticated(!!session);
-        });
-    }, []);
+    const { isAuthenticated: authStatus, loading } = useAuth();
 
     const requireAuth = useCallback(
         (action: () => void) => {
-            if (isAuthenticated) {
+            if (loading) return; // Wait for auth state to load
+            
+            if (authStatus) {
                 action();
             } else {
                 toast("Please sign in to continue", {
@@ -30,8 +27,8 @@ export function useAuthGuard() {
                 router.push("/signin");
             }
         },
-        [isAuthenticated, router],
+        [authStatus, loading, router],
     );
 
-    return { isAuthenticated, requireAuth };
+    return { isAuthenticated: authStatus, requireAuth };
 }

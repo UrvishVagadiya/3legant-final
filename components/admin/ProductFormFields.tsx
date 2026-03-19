@@ -84,7 +84,6 @@ interface Props {
   setFormData: React.Dispatch<React.SetStateAction<ProductFormData>>;
   editingId: string | null;
   onImageChange: (file: File) => void;
-  imageFile: File | null;
 }
 
 export default function ProductFormFields({
@@ -92,7 +91,6 @@ export default function ProductFormFields({
   setFormData,
   editingId,
   onImageChange,
-  imageFile,
 }: Props) {
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
@@ -108,25 +106,16 @@ export default function ProductFormFields({
   return (
     <>
       <div>
-        <label className="block text-xs font-semibold text-[#6C7275] mb-2 uppercase">
+        <label className="block text-xs font-semibold text-[#6C7275] mb-1 uppercase">
           Product Image{!editingId && " *"}
         </label>
-        {imageFile ? (
-          <div className="mb-4 bg-gray-50 border border-gray-200 rounded-lg p-2 flex justify-center">
-            <img src={URL.createObjectURL(imageFile)} alt="Preview" className="h-32 object-contain rounded" />
-          </div>
-        ) : formData.img ? (
-          <div className="mb-4 bg-gray-50 border border-gray-200 rounded-lg p-2 flex justify-center">
-            <img src={formData.img} alt="Current" className="h-32 object-contain rounded" />
-          </div>
-        ) : null}
         <input
           type="file"
           accept="image/*"
           onChange={(e) =>
             e.target.files?.[0] && onImageChange(e.target.files[0])
           }
-          className="w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-[#141718] file:text-white hover:file:bg-black transition-colors"
+          className="w-full text-sm"
         />
       </div>
       <Input
@@ -185,7 +174,18 @@ export default function ProductFormFields({
           placeholder="e.g. 5.2 kg"
         />
       </div>
-
+      <div>
+        <Input
+          label="Offer Valid Until"
+          name="valid_until"
+          type="datetime-local"
+          value={formData.valid_until}
+          onChange={handleChange}
+        />
+        <p className="text-xs text-[#6C7275] mt-1">
+          Leave empty for no offer countdown
+        </p>
+      </div>
       <div className="grid grid-cols-2 gap-4">
         <Input
           label="SKU"

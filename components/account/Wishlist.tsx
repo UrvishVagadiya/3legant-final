@@ -5,7 +5,10 @@ import { X } from "lucide-react";
 import { useWishlistStore } from "../../store/wishlistStore";
 import { useCartStore } from "../../store/cartStore";
 
+import { useAuth } from "@/context/AuthContext";
+
 const Wishlist = () => {
+  const { user } = useAuth();
   const { items: wishlistItems, removeFromWishlist } = useWishlistStore();
   const { addToCart } = useCartStore();
 
@@ -49,7 +52,7 @@ const Wishlist = () => {
               >
                 <td className="py-6 flex items-center gap-4">
                   <button
-                    onClick={() => removeFromWishlist(item.id)}
+                    onClick={() => removeFromWishlist(item.id, user)}
                     className="text-gray-400 hover:text-black transition-colors"
                   >
                     <X size={20} />
@@ -87,7 +90,7 @@ const Wishlist = () => {
                             : item.price,
                         image: item.image,
                         color: item.color || "Default",
-                      })
+                      }, user)
                     }
                     className="bg-[#141718] text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors w-full sm:w-auto"
                   >
@@ -148,7 +151,7 @@ const Wishlist = () => {
                       : item.price,
                   image: item.image,
                   color: item.color || "Default",
-                })
+                }, user)
               }
               className="bg-[#141718] text-white px-6 py-3 mt-1 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors w-full"
             >

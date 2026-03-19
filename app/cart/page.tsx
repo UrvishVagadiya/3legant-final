@@ -4,13 +4,17 @@ import { X, Ticket } from "lucide-react";
 import CheckoutStepper from "@/components/sections/CheckoutStepper";
 import CartItem from "@/components/cart/CartItem";
 import CartSummary from "@/components/cart/CartSummary";
+import CouponSuggestions from "@/components/cart/CouponSuggestions";
 import { useCartStore } from "@/store/cartStore";
 import { useIsMounted } from "@/hooks/useIsMounted";
 import { getShippingCost } from "@/utils/getShippingCost";
 import { validateCoupon } from "@/utils/coupon";
 import toast from "react-hot-toast";
 
+import { useAuth } from "@/context/AuthContext";
+
 const Cart = () => {
+  const { user } = useAuth();
   const {
     items,
     removeFromCart,
@@ -69,6 +73,7 @@ const Cart = () => {
               item={item}
               onRemove={removeFromCart}
               onUpdateQuantity={updateQuantity}
+              user={user}
             />
           ))}
 
@@ -93,7 +98,7 @@ const Cart = () => {
                 </button>
               </div>
             )}
-            <div className="flex items-center border border-gray-300 rounded overflow-hidden max-w-sm">
+            <div className="flex items-center border border-gray-300 rounded overflow-hidden max-w-sm mb-2">
               <div className="pl-3 text-gray-400">
                 <Ticket size={20} />
               </div>
@@ -110,6 +115,15 @@ const Cart = () => {
               >
                 {couponLoading ? "..." : "Apply"}
               </button>
+            </div>
+            <div className="max-w-sm">
+              <CouponSuggestions 
+                onSelect={(code: string) => {
+                  setCouponCode(code);
+                  setTimeout(() => handleApplyCoupon(), 0);
+                }} 
+                subtotal={subtotal} 
+              />
             </div>
           </div>
         </div>

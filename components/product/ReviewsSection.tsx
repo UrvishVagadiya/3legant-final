@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/utils/supabase/client";
 import toast from "react-hot-toast";
 import { Stars, ReviewForm, ReviewCard } from "./ReviewParts";
+import { useAuth } from "@/context/AuthContext";
 
 interface ReviewLikes {
   [reviewId: string]: { count: number; liked: boolean };
@@ -22,6 +23,7 @@ interface ReviewReplies {
 }
 
 export function useProductReviews(productId: string | undefined) {
+  const { user, session: authSession } = useAuth();
   const [reviews, setReviews] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [text, setText] = useState("");
@@ -30,7 +32,6 @@ export function useProductReviews(productId: string | undefined) {
   const [sortOption, setSortOption] = useState("Newest");
   const [isEditing, setIsEditing] = useState(false);
   const [userReview, setUserReview] = useState<any>(null);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [likes, setLikes] = useState<ReviewLikes>({});
   const [replies, setReplies] = useState<ReviewReplies>({});
   const supabase = createClient();
@@ -38,12 +39,6 @@ export function useProductReviews(productId: string | undefined) {
   useEffect(() => {
     if (!productId) return;
     (async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const userId = session?.user?.id || null;
-      setCurrentUserId(userId);
-
       const { data: reviewsData } = await supabase
         .from("product_reviews")
         .select("*")
@@ -51,59 +46,58 @@ export function useProductReviews(productId: string | undefined) {
         .order("created_at", { ascending: false });
 
       const allReviews = reviewsData || [];
-      setReviews(allReviews);
-
-      if (userId) {
-        const existing = allReviews.find((r: any) => r.user_id === userId);
-        if (existing) setUserReview(existing);
-      }
-
       const reviewIds = allReviews.map((r: any) => r.id);
 
-      try {
-        const { data: userLikesData } = userId
-          ? await supabase
-              .from("review_likes")
-              .select("review_id")
-              .eq("user_id", userId)
-              .in("review_id", reviewIds)
-          : { data: null };
+      // Fetch likes and replies in parallel
+      const [userLikesResult, repliesResult] = await Promise.all([
+        user?.id
+          ? supabase
+            .from("review_likes")
+            .select("review_id")
+            .eq("user_id", user.id)
+            .in("review_id", reviewIds)
+          : Promise.resolve({ data: null }),
+        supabase
+          .from("review_replies")
+          .select("*")
+          .in("review_id", reviewIds)
+          .order("created_at", { ascending: true })
+      ]);
 
-        const likesMap: ReviewLikes = {};
-        allReviews.forEach((r: any) => {
-          likesMap[r.id] = {
-            count: r.likes_count || 0,
-            liked: userLikesData?.some((l: any) => l.review_id === r.id) || false,
-          };
+      const userLikesData = userLikesResult.data;
+      const repliesData = repliesResult.data;
+
+      // Prepare states
+      const likesMap: ReviewLikes = {};
+      allReviews.forEach((r: any) => {
+        likesMap[r.id] = {
+          count: r.likes_count || 0,
+          liked: userLikesData?.some((l: any) => l.review_id === r.id) || false,
+        };
+      });
+
+      const repliesMap: ReviewReplies = {};
+      reviewIds.forEach((id: string) => {
+        repliesMap[id] = [];
+      });
+      if (repliesData) {
+        repliesData.forEach((reply: ReviewReply) => {
+          if (repliesMap[reply.review_id]) {
+            repliesMap[reply.review_id].push(reply);
+          }
         });
-        setLikes(likesMap);
-      } catch (error) {
-        console.error("Error fetching likes data:", error);
       }
 
-        try {
-          const { data: repliesData } = await supabase
-            .from("review_replies")
-            .select("*")
-            .in("review_id", reviewIds)
-            .order("created_at", { ascending: true });
-
-          const repliesMap: ReviewReplies = {};
-          reviewIds.forEach((id: string) => {
-            repliesMap[id] = [];
-          });
-          if (repliesData) {
-            repliesData.forEach((reply: ReviewReply) => {
-              if (repliesMap[reply.review_id]) {
-                repliesMap[reply.review_id].push(reply);
-              }
-            });
-          }
-          setReplies(repliesMap);
-        } catch {
-        }
+      // Batch state updates
+      setReviews(allReviews);
+      if (user?.id) {
+        const existing = allReviews.find((r: any) => r.user_id === user.id);
+        if (existing) setUserReview(existing);
+      }
+      setLikes(likesMap);
+      setReplies(repliesMap);
     })();
-  }, [productId]);
+  }, [productId, user?.id]);
 
   const hasUserReview = !!userReview;
 
@@ -117,10 +111,7 @@ export function useProductReviews(productId: string | undefined) {
 
   const submit = async () => {
     if (!text.trim()) return;
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session) {
+    if (!user) {
       toast("Please sign in to write a review", {
         icon: "🔒",
         style: { borderRadius: "8px", background: "#141718", color: "#fff" },
@@ -129,8 +120,8 @@ export function useProductReviews(productId: string | undefined) {
     }
     setSubmitting(true);
     const userName =
-      session.user.user_metadata?.full_name ||
-      session.user.email?.split("@")[0] ||
+      user.user_metadata?.full_name ||
+      user.email?.split("@")[0] ||
       "Anonymous";
 
     if (isEditing && userReview) {
@@ -159,7 +150,7 @@ export function useProductReviews(productId: string | undefined) {
         .from("product_reviews")
         .insert({
           product_id: productId,
-          user_id: session.user.id,
+          user_id: user.id,
           user_name: userName,
           rating,
           review: text.trim(),
@@ -170,7 +161,7 @@ export function useProductReviews(productId: string | undefined) {
         const newReview = data || {
           id: crypto.randomUUID(),
           product_id: productId,
-          user_id: session.user.id,
+          user_id: user.id,
           user_name: userName,
           rating,
           review: text.trim(),
@@ -190,10 +181,7 @@ export function useProductReviews(productId: string | undefined) {
   };
 
   const toggleLike = async (reviewId: string) => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session) {
+    if (!user) {
       toast("Please sign in to like a review", {
         icon: "🔒",
         style: { borderRadius: "8px", background: "#141718", color: "#fff" },
@@ -202,14 +190,14 @@ export function useProductReviews(productId: string | undefined) {
     }
 
     const current = likes[reviewId] || { count: 0, liked: false };
-    console.log("Toggle like for review:", reviewId, "Current liked state:", current.liked, "User ID:", session.user.id);
+    console.log("Toggle like for review:", reviewId, "Current liked state:", current.liked, "User ID:", user.id);
 
     if (current.liked) {
       const { error } = await supabase
         .from("review_likes")
         .delete()
         .eq("review_id", reviewId)
-        .eq("user_id", session.user.id);
+        .eq("user_id", user.id);
 
       if (error) {
         console.error("Error unliking review:", error);
@@ -227,7 +215,7 @@ export function useProductReviews(productId: string | undefined) {
     } else {
       const { error } = await supabase.from("review_likes").insert({
         review_id: reviewId,
-        user_id: session.user.id,
+        user_id: user.id,
       });
 
       if (error) {
@@ -247,10 +235,7 @@ export function useProductReviews(productId: string | undefined) {
 
   const submitReply = async (reviewId: string, replyText: string) => {
     if (!replyText.trim()) return;
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-    if (!session) {
+    if (!user) {
       toast("Please sign in to reply", {
         icon: "🔒",
         style: { borderRadius: "8px", background: "#141718", color: "#fff" },
@@ -259,15 +244,15 @@ export function useProductReviews(productId: string | undefined) {
     }
 
     const userName =
-      session.user.user_metadata?.full_name ||
-      session.user.email?.split("@")[0] ||
+      user.user_metadata?.full_name ||
+      user.email?.split("@")[0] ||
       "Anonymous";
 
     const { data, error } = await supabase
       .from("review_replies")
       .insert({
         review_id: reviewId,
-        user_id: session.user.id,
+        user_id: user.id,
         user_name: userName,
         reply: replyText.trim(),
       })
@@ -312,10 +297,10 @@ export function useProductReviews(productId: string | undefined) {
     setSortOption,
     isEditing,
     setIsEditing,
-    hasUserReview,
     userReview,
+    hasUserReview,
     startEdit,
-    currentUserId,
+    currentUserId: user?.id || null,
     likes,
     toggleLike,
     replies,

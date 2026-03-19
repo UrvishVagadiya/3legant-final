@@ -23,6 +23,8 @@ const navItems = [
   { href: "/admin/coupons", label: "Coupons", icon: Ticket },
 ];
 
+import { useAuth } from "@/context/AuthContext";
+
 export default function AdminLayout({
   children,
 }: {
@@ -30,27 +32,32 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { user, role, loading: authLoading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const checkAdmin = async () => {
-      const supabase = createClient();
-      const { data } = await supabase.auth.getUser();
-      if (!data?.user) {
-        router.push("/signin");
-        return;
-      }
-      // For now, allow any authenticated user.
-      // To restrict, check user metadata/role: data.user.user_metadata?.role === 'admin'
-      setAuthorized(true);
-      setLoading(false);
-    };
-    checkAdmin();
-  }, [router]);
+    if (authLoading) return;
 
-  if (loading) {
+    if (!user) {
+      router.push("/signin");
+      return;
+    }
+
+    // Wait for the role to be fetched if it's not yet available
+    if (role === null) return;
+
+    if (role !== "admin") {
+      router.push("/");
+      return;
+    }
+
+    setAuthorized(true);
+    setLoading(false);
+  }, [user, role, authLoading, router]);
+
+  if (loading || authLoading || (user && role === null)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F9FAFB]">
         <div className="text-[#6C7275] text-lg">Loading...</div>

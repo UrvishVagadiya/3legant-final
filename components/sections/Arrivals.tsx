@@ -37,8 +37,11 @@ const Arrivals = () => {
       .select("*")
       .order("id", { ascending: false })
       .limit(10)
-      .then(({ data, error }) => {
-        if (!error && data) setProducts(data);
+      .then(({ data, error }: { data: any[] | null; error: any }) => {
+        if (error) {
+          console.error("Error fetching arrivals:", error);
+        }
+        if (data) setProducts(data);
         setLoading(false);
       });
   }, [supabase]);

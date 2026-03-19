@@ -16,8 +16,11 @@ export function useShopFilters() {
         supabase
             .from("products")
             .select("*")
-            .then(({ data, error }) => {
-                if (!error) setProducts(data || []);
+            .then(({ data, error }: { data: any[] | null; error: any }) => {
+                if (error) {
+                    console.error("Error fetching shop products:", error);
+                }
+                if (data) setProducts(data || []);
             });
     }, []);
 

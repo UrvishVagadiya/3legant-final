@@ -11,8 +11,10 @@ import SearchOverlay from "./SearchOverlay";
 import MobileMenu from "./MobileMenu";
 import toast from "react-hot-toast";
 
+import { useAuth } from "@/context/AuthContext";
+
 const Navbar = () => {
-  const [user, setUser] = useState<any>(null);
+  const { user, role } = useAuth();
   const supabase = createClient();
   const router = useRouter();
   const pathname = usePathname();
@@ -22,27 +24,6 @@ const Navbar = () => {
   const isMounted = useIsMounted();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      setUser(user);
-    };
-
-    getUser();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null);
-      },
-    );
-
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
-  }, [supabase.auth]);
 
   const getInitial = () => {
     if (user?.user_metadata.name) {
@@ -97,6 +78,16 @@ const Navbar = () => {
         >
           Contact Us
         </Link>
+        {role === "admin" && (
+          <Link
+            href={"/admin"}
+            className={`${
+              pathname.startsWith("/admin") ? "text-[#141718] font-bold" : "text-[#6C7275] hover:text-[#141718]"
+            } transition-colors duration-300 ease-in-out`}
+          >
+            Admin
+          </Link>
+        )}
       </div>
 
       <div className="flex items-center gap-3 md:gap-4 text-[#141718]">
@@ -145,7 +136,6 @@ const Navbar = () => {
       <MobileMenu
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
-        user={user}
       />
     </div>
   );

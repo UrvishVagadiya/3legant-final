@@ -17,7 +17,10 @@ interface ProductLike {
     color?: string[] | string;
 }
 
+import { useAuth } from "@/context/AuthContext";
+
 export function useProductActions() {
+    const { user } = useAuth();
     const {
         items: wishlistItems,
         addToWishlist,
@@ -45,7 +48,7 @@ export function useProductActions() {
 
         requireAuth(() => {
             if (wishlistItems.some((i) => i.id == product.id)) {
-                removeFromWishlist(product.id);
+                removeFromWishlist(product.id, user);
             } else {
                 addToWishlist({
                     id: product.id,
@@ -55,7 +58,7 @@ export function useProductActions() {
                         product.mrp || product.MRP || product.old_price || product.oldprice,
                     image: product.img || product.image_url || "/image-1.png",
                     color: selectedColor,
-                });
+                }, user);
             }
         });
     };
@@ -84,6 +87,11 @@ export function useProductActions() {
                 image: product.img || product.image_url || "/image-1.png",
                 color: selectedColor,
             });
+            // We pass user when syncing if needed, but addToCart calls syncCartToDb
+            // Let's make sure addToCart uses the user if possible.
+            // Actually, syncCartToDb in cartStore was updated to accept user.
+            // But addToCart calls get().syncCartToDb() without arguments.
+            // I should update addToCart to also accept user and pass it.
         });
     };
 

@@ -2,8 +2,9 @@
 import { GoHeart, GoHeartFill } from "react-icons/go";
 import { RatingStars } from "@/components/ui/ProductCard";
 import Link from "next/link";
-import Image from "next/image";
 import { isOfferExpired } from "@/utils/isOfferExpired";
+import { colorMap } from "../product/ColorSelector";
+import TintedProductImage from "../product/TintedProductImage";
 
 interface Product {
   id: number;
@@ -42,18 +43,24 @@ const ArrivalCard = ({
   const displayPrice =
     expired && card.mrp && card.mrp > card.price ? card.mrp : card.price;
   const displayMrp = expired ? undefined : card.mrp;
+    const colorOptions = Array.isArray(card.color) ? card.color : card.color ? [card.color] : [];
+    const firstColor = colorOptions[0];
+    const colorHex = firstColor ? colorMap[firstColor] : null;
+    const shouldTint = firstColor && firstColor.toLowerCase() !== "white";
+
   return (
     <Link
       href={`/product/${card.id}`}
       className="group w-55 md:w-65.5 shrink-0 flex flex-col relative pb-4"
     >
       <div className="relative w-full aspect-4/5 bg-[#F3F5F7] flex items-center justify-center overflow-hidden rounded">
-        <Image
+        <TintedProductImage
           src={card.img}
           alt={card.title}
           fill
           unoptimized
-          className="w-full h-full object-cover object-center mix-blend-multiply"
+          className="w-full h-full object-cover object-center"
+          colorHex={shouldTint ? colorHex : null}
         />
         <div className="w-full absolute top-0 p-3 md:p-4 flex justify-between items-start">
           <div className="flex flex-col gap-2">

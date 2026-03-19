@@ -33,8 +33,11 @@ export default function SignInPage() {
     if (error) {
       alert(error.message);
     } else {
-      const isAdmin = data.email.toLowerCase() === "admin1234@yopmail.com";
-      router.push(isAdmin ? "/admin" : "/");
+      // The session should be ready now.
+      // We don't need to fetch the profile here if AuthContext is already handling it,
+      // but if we want to redirect BEFORE AuthContext re-renders, we can keep it.
+      // However, let's optimize the redirection by just checking roles or defaults.
+      router.push("/");
     }
   };
 

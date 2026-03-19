@@ -72,7 +72,10 @@ const formatDate = (dateStr: string) =>
     day: "numeric",
   });
 
+import { useAuth } from "@/context/AuthContext";
+
 const OrdersHistory = () => {
+  const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
@@ -81,19 +84,18 @@ const OrdersHistory = () => {
 
   useEffect(() => {
     const fetchOrders = async () => {
-      const supabase = createClient();
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData?.user) {
+      if (!user) {
         setLoading(false); 
         return;
       }
 
+      const supabase = createClient();
       const { data, error } = await supabase
         .from("orders")
         .select(
           "id, order_code, created_at, status, subtotal, shipping_cost, discount, total, shipping_method, tracking_number, payments(status), refund_status, refund_request_reason, refund_requested_at",
         )
-        .eq("user_id", userData.user.id)
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
       if (error) {
@@ -109,7 +111,7 @@ const OrdersHistory = () => {
       setLoading(false);
     };
     fetchOrders();
-  }, []);
+  }, [user?.id]);
 
   const toggleOrderDetails = async (orderId: string) => {
     if (expandedOrder === orderId) {

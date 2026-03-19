@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -23,22 +23,18 @@ interface OrderData {
   paymentMethod: string;
   orderCode: string;
   date: string;
-  cardLast4?: string;
-  cardBrand?: string;
 }
 
 const Complete = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [orderData, setOrderData] = useState<OrderData | null>(null);
-  const [loading, setLoading] = useState(true);
   const { clearCart } = useCartStore();
 
   useEffect(() => {
     const sessionId = searchParams.get("session_id");
 
     if (sessionId) {
-      // Stripe payment completed - fetch order data from API
       const fetchOrderData = async () => {
         try {
           const res = await fetch(
@@ -48,17 +44,12 @@ const Complete = () => {
             const data = await res.json();
             setOrderData(data);
             clearCart();
-            // Clean up any pending order data
             sessionStorage.removeItem("pendingOrder");
           } else {
-            console.error("Failed to fetch order data");
             router.push("/");
           }
         } catch (err) {
-          console.error("Error fetching order data:", err);
           router.push("/");
-        } finally {
-          setLoading(false);
         }
       };
       fetchOrderData();
@@ -66,23 +57,13 @@ const Complete = () => {
       const stored = sessionStorage.getItem("lastOrder");
       if (stored) {
         setOrderData(JSON.parse(stored));
-        setLoading(false);
       } else {
         router.push("/");
       }
     }
   }, [searchParams, router, clearCart]);
 
-  if (loading || !orderData) {
-    return (
-      <div className="max-w-300 mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16 mb-20 font-poppins text-[#141718] flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <div className="inline-block w-8 h-8 border-4 border-gray-200 border-t-[#141718] rounded-full animate-spin mb-4" />
-          <p className="text-[#6C7275] text-lg">Processing your order...</p>
-        </div>
-      </div>
-    );
-  }
+  if (!orderData) return null;
 
   return (
     <div className="max-w-300 mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16 mb-20 font-poppins text-[#141718]">
@@ -107,19 +88,13 @@ const Complete = () => {
               key={item.id}
               className="relative w-20 h-24 bg-[#F3F5F7] rounded shrink-0 flex items-center justify-center"
             >
-              {item.image ? (
-                <Image
-                  src={item.image}
-                  alt={item.name}
-                  fill
-                  unoptimized
-                  className="object-cover p-2"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">
-                  No img
-                </div>
-              )}
+              <Image
+                src={item.image}
+                alt={item.name}
+                fill
+                unoptimized
+                className="object-cover p-2"
+              />
               <div className="absolute -top-3 -right-3 bg-[#141718] text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold border-2 border-white shadow-sm">
                 {item.quantity}
               </div>
@@ -149,17 +124,11 @@ const Complete = () => {
             </span>
             <span className="font-semibold text-[#141718]">
               {orderData.paymentMethod}
-              {orderData.cardLast4 && (
-                <span className="text-[#6C7275] text-sm ml-1">
-                  ({orderData.cardBrand && `${orderData.cardBrand} `}••••{" "}
-                  {orderData.cardLast4})
-                </span>
-              )}
             </span>
           </div>
         </div>
 
-        <Link href="/account">
+        <Link href="/account?tab=orders">
           <button className="bg-[#141718] text-white px-10 py-3 md:py-4 rounded-full font-medium text-base hover:bg-black transition-colors min-w-50 flex items-center justify-center mt-4">
             Purchase history
           </button>
@@ -169,4 +138,10 @@ const Complete = () => {
   );
 };
 
-export default Complete;
+export default function Page() {
+  return (
+    <Suspense>
+      <Complete />
+    </Suspense>
+  );
+}

@@ -41,7 +41,7 @@ export default function AdminCoupons() {
       toast.success("Coupon updated");
     } else {
       const res = await fetch("/api/admin/coupons", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      if (!res.ok) { let msg = "Failed to create coupon"; try { const err = await res.json(); if (err.error?.includes("duplicate")) msg = "Coupon code already exists"; else if (err.error) msg = err.error; } catch {} toast.error(msg); setSaving(false); return; }
+      if (!res.ok) { let msg = "Failed to create coupon"; try { const err = await res.json(); if (err.error?.includes("duplicate")) msg = "Coupon code already exists"; else if (err.error) msg = err.error; } catch { } toast.error(msg); setSaving(false); return; }
       toast.success("Coupon created");
     }
     setSaving(false); setShowModal(false); fetchCoupons();

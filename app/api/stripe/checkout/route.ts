@@ -127,18 +127,14 @@ export async function POST(req: NextRequest) {
                     items.map(
                         (item: {
                             id: string;
-                            name: string;
-                            price: number;
                             quantity: number;
-                            image: string;
+                            price: number;
                             color: string;
                         }) => ({
                             id: item.id,
-                            name: item.name,
-                            price: item.price,
-                            quantity: item.quantity,
-                            image: item.image,
-                            color: item.color,
+                            qty: item.quantity,
+                            prc: item.price,
+                            clr: item.color,
                         })
                     )
                 ),

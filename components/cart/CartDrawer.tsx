@@ -6,7 +6,11 @@ import Link from "next/link";
 import { useCartStore } from "../../store/cartStore";
 import { useIsMounted } from "@/hooks/useIsMounted";
 
+import { useAuth } from "@/context/AuthContext";
+import { colorMap } from "../product/ColorSelector";
+
 export default function CartDrawer() {
+  const { user } = useAuth();
   const { isCartOpen, toggleCart, items, removeFromCart, updateQuantity } =
     useCartStore();
   const isMounted = useIsMounted();
@@ -44,13 +48,17 @@ export default function CartDrawer() {
               key={`${item.id}-${item.color}`}
               className="flex gap-4 border-b border-[#E8ECEF] pb-6 last:border-0 last:pb-0"
             >
-              <div className="relative w-20 h-24 bg-[#F3F5F7] rounded overflow-hidden shrink-0">
+              <div 
+                className="relative w-20 h-24 bg-[#F3F5F7] rounded overflow-hidden shrink-0"
+                style={{ backgroundColor: (item.color?.toLowerCase() !== 'white' && colorMap[item.color as string]) ? colorMap[item.color as string] : undefined }}
+              >
                 <Image
                   src={item.image}
                   alt={item.name}
                   fill
                   unoptimized
-                  className="object-cover mix-blend-multiply p-1"
+                  className="object-cover p-1 transition-all duration-300"
+                  style={{ mixBlendMode: (item.color?.toLowerCase() !== 'white' && colorMap[item.color as string]) ? 'multiply' : 'normal' }}
                 />
               </div>
               <div className="flex flex-col flex-1 justify-between">
@@ -68,7 +76,7 @@ export default function CartDrawer() {
                       ${Number(item.price).toFixed(2)}
                     </span>
                     <button
-                      onClick={() => removeFromCart(item.id, item.color)}
+                      onClick={() => removeFromCart(item.id, item.color, user)}
                       className="text-[#6C7275] hover:text-[#141718] transition-colors p-1 mt-1 -mr-1"
                     >
                       <X className="w-5 h-5" />
@@ -78,7 +86,7 @@ export default function CartDrawer() {
                 <div className="flex items-center justify-between border border-[#6C7275] rounded w-20 h-8 px-2">
                   <button
                     onClick={() =>
-                      updateQuantity(item.id, item.color, item.quantity - 1)
+                      updateQuantity(item.id, item.color, item.quantity - 1, user)
                     }
                     className="text-[#141718]"
                   >
@@ -89,7 +97,7 @@ export default function CartDrawer() {
                   </span>
                   <button
                     onClick={() =>
-                      updateQuantity(item.id, item.color, item.quantity + 1)
+                      updateQuantity(item.id, item.color, item.quantity + 1, user)
                     }
                     className="text-[#141718]"
                   >

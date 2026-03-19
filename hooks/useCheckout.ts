@@ -3,7 +3,10 @@ import { createClient } from "@/utils/supabase/client";
 import { validateCoupon } from "@/utils/coupon";
 import toast from "react-hot-toast";
 
+import { useAuth } from "@/context/AuthContext";
+
 export function useCheckout(cartItems: any[], subtotal: number, shippingCost: number) {
+    const { user } = useAuth();
     const [placing, setPlacing] = useState(false);
     const [couponCode, setCouponCode] = useState("");
     const [appliedCoupon, setAppliedCoupon] = useState<{ id: string; code: string } | null>(null);
@@ -31,8 +34,7 @@ export function useCheckout(cartItems: any[], subtotal: number, shippingCost: nu
         setPlacing(true);
         try {
             const supabase = createClient();
-            const { data: userData } = await supabase.auth.getUser();
-            if (!userData?.user) { toast.error("Please sign in to place an order"); setPlacing(false); return; }
+            if (!user) { toast.error("Please sign in to place an order"); setPlacing(false); return; }
 
             const finalTotal = subtotal + shippingCost - couponDiscount;
 

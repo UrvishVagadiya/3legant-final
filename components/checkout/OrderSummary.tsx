@@ -1,5 +1,7 @@
 import Image from "next/image";
 import { Ticket } from "lucide-react";
+import CouponSuggestions from "@/components/cart/CouponSuggestions";
+import { colorMap } from "../product/ColorSelector";
 
 interface CartItem {
   id: string;
@@ -59,13 +61,17 @@ export default function OrderSummary({
       <div className="space-y-4 mb-6 max-h-100 overflow-y-auto pr-2">
         {cartItems.map((item) => (
           <div key={item.id} className="flex gap-4 items-center">
-            <div className="relative w-16 h-20 bg-[#F3F5F7] rounded shrink-0 flex items-center justify-center">
+            <div 
+              className="relative w-16 h-20 bg-[#F3F5F7] rounded shrink-0 flex items-center justify-center"
+              style={{ backgroundColor: (item.color?.toLowerCase() !== 'white' && colorMap[item.color]) ? colorMap[item.color] : undefined }}
+            >
               <Image
                 src={item.image}
                 alt={item.name}
                 fill
                 unoptimized
-                className="object-contain p-2"
+                className="object-contain p-2 transition-all duration-300"
+                style={{ mixBlendMode: (item.color?.toLowerCase() !== 'white' && colorMap[item.color]) ? 'multiply' : 'normal' }}
               />
             </div>
             <div className="flex-1">
@@ -104,7 +110,7 @@ export default function OrderSummary({
         ))}
       </div>
 
-      <div className="flex items-center border border-gray-300 rounded overflow-hidden mb-6">
+      <div className="flex items-center border border-gray-300 rounded overflow-hidden mb-2">
         <input
           type="text"
           placeholder="Coupon code"
@@ -118,6 +124,17 @@ export default function OrderSummary({
         >
           {couponLoading ? "..." : "Apply"}
         </button>
+      </div>
+
+      <div className="mb-6">
+        <CouponSuggestions 
+          onSelect={(code: string) => {
+            setCouponCode(code);
+            // Use a short timeout to ensure state is updated before applying
+            setTimeout(() => onApplyCoupon(), 0);
+          }} 
+          subtotal={subtotal} 
+        />
       </div>
 
       <div className="space-y-3 mb-6">

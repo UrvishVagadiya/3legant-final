@@ -24,6 +24,8 @@ const tabs: { value: Tab; label: string }[] = [
   { value: "wishlist", label: "Wishlist" },
 ];
 
+import { useAuth } from "@/context/AuthContext";
+
 const AccountSidebar = ({
   fullName,
   displayName,
@@ -32,6 +34,7 @@ const AccountSidebar = ({
   onTabChange,
   onAvatarChange,
 }: AccountSidebarProps) => {
+  const { user } = useAuth();
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -41,14 +44,11 @@ const AccountSidebar = ({
     // console.log("File input changed:", e.target.files);
     const file = e.target.files?.[0];
     //  console.log(file);
-    if (!file) return;
+    if (!file || !user) return;
     setIsUploading(true);
     try {
-      const { data: userData, error: userError } =
-        await supabase.auth.getUser();
-      if (userError || !userData?.user) throw userError;
       const fileExt = file.name.split(".").pop();
-      const fileName = `${userData.user.id}-${uuidv4()}.${fileExt}`;
+      const fileName = `${user.id}-${uuidv4()}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
       const { error: uploadError } = await supabase.storage
         .from("avatars")

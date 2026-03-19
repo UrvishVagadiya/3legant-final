@@ -14,7 +14,10 @@ import { useCheckout, validateCheckoutForm } from "@/hooks/useCheckout";
 import { createClient } from "@/utils/supabase/client";
 import { F, billingKeys, initialForm, applyAddr } from "@/utils/checkoutForm";
 
+import { useAuth } from "@/context/AuthContext";
+
 export default function Checkout() {
+  const { user } = useAuth();
   const { items: cartItems, updateQuantity, shippingMethod, setShippingMethod } = useCartStore();
   const isMounted = useIsMounted();
   const [useDifferentBilling, setUseDifferentBilling] = useState(false);
@@ -35,11 +38,9 @@ export default function Checkout() {
   const total = subtotal + shippingCost - discount;
 
   useEffect(() => {
+    if (!user) return;
     (async () => {
       const supabase = createClient();
-      const { data: u } = await supabase.auth.getUser();
-      if (!u?.user) return;
-      const user = u.user;
       const meta = user.user_metadata || {};
 
       // Try multiple metadata keys for names
@@ -117,7 +118,7 @@ export default function Checkout() {
         }));
       }
     })();
-  }, []);
+  }, [user]);
 
   const handleSelect = (id: string, type: "shipping" | "billing") => {
     const b = type === "billing";

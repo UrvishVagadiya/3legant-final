@@ -20,7 +20,10 @@ type FormData = {
   repeatNewPassword: string;
 };
 
+import { useAuth } from "@/context/AuthContext";
+
 const AccountContent = () => {
+  const { user } = useAuth();
   const [fullName, setFullName] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -46,25 +49,20 @@ const AccountContent = () => {
   } = useForm<FormData>();
 
   useEffect(() => {
-    const fetchUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      if (data?.user) {
-        const user = data.user;
-        const name = user.user_metadata?.name || user.user_metadata?.full_name || "";
-        const userDisplayName =
-          user.user_metadata?.displayName || user.user_metadata?.username || "";
-        setFullName(name);
-        setDisplayName(userDisplayName);
-        setAvatarUrl(user.user_metadata?.avatar_url || null);
-        setValue("email", user.email || "");
-        setValue("displayName", userDisplayName);
-        const [firstName, lastName] = name.split(" ");
-        setValue("firstName", firstName || "");
-        setValue("lastName", lastName || "");
-      }
-    };
-    fetchUser();
-  }, [supabase, setValue]);
+    if (user) {
+      const name = user.user_metadata?.name || user.user_metadata?.full_name || "";
+      const userDisplayName =
+        user.user_metadata?.displayName || user.user_metadata?.username || "";
+      setFullName(name);
+      setDisplayName(userDisplayName);
+      setAvatarUrl(user.user_metadata?.avatar_url || null);
+      setValue("email", user.email || "");
+      setValue("displayName", userDisplayName);
+      const [firstName, lastName] = name.split(" ");
+      setValue("firstName", firstName || "");
+      setValue("lastName", lastName || "");
+    }
+  }, [user, setValue]);
 
   const onSubmit = async (data: FormData) => {
     if (data.newPassword !== data.repeatNewPassword) return;
@@ -138,8 +136,10 @@ const AccountContent = () => {
   );
 };
 
+import AccountLoading from "./loading";
+
 const Account = () => (
-  <Suspense fallback={<div>Loading...</div>}>
+  <Suspense fallback={<AccountLoading />}>
     <AccountContent />
   </Suspense>
 );

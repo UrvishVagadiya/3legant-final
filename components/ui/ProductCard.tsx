@@ -4,6 +4,8 @@ import { IoMdStar, IoMdStarHalf, IoMdStarOutline } from "react-icons/io";
 import Link from "next/link";
 import Image from "next/image";
 import { isOfferExpired } from "@/utils/isOfferExpired";
+import { colorMap } from "../product/ColorSelector";
+import TintedProductImage from "../product/TintedProductImage";
 
 interface ProductCardProps {
   product: {
@@ -78,15 +80,21 @@ const ProductCard = ({
   const badgePad = isSmall ? "px-3" : "px-2.5";
   const padding = isSmall ? "p-3 md:p-4" : "p-3";
 
+  const colorOptions = Array.isArray(product.color) ? product.color : product.color ? [product.color] : [];
+  const firstColor = colorOptions[0];
+  const colorHex = firstColor ? colorMap[firstColor] : null;
+  const shouldTint = firstColor && firstColor.toLowerCase() !== "white";
+
   const card = (
     <div className="group relative flex flex-col">
       <div className="relative bg-[#F3F5F7] flex items-center justify-center overflow-hidden rounded w-full aspect-4/5">
-        <Image
+        <TintedProductImage
           src={image}
           alt={title}
           fill
           unoptimized
-          className="w-full h-full object-cover object-center mix-blend-multiply"
+          className="w-full h-full object-cover object-center"
+          colorHex={shouldTint ? colorHex : null}
         />
 
         <div
