@@ -14,15 +14,29 @@ export interface Coupon {
     valid_until: string | null;
 }
 
-export async function validateCoupon(code: string, subtotal: number): Promise<{ valid: boolean; coupon?: Coupon; discount: number; error?: string }> {
+export async function validateCoupon(code: string, subtotal: number, userId?: string): Promise<{ valid: boolean; coupon?: Coupon; discount: number; error?: string }> {
     const supabase = createClient();
+
+    // Check if user has already used this coupon in a previous order
+    if (userId) {
+        const { data: existingOrders, error: orderError } = await supabase
+            .from('orders')
+            .select('id')
+            .eq('user_id', userId)
+            .eq('coupon_code', code.toUpperCase().trim())
+            .limit(1);
+
+        if (!orderError && existingOrders && existingOrders.length > 0) {
+            return { valid: false, discount: 0, error: 'You have already used this coupon' };
+        }
+    }
 
     const { data, error } = await supabase
         .from('coupons')
         .select('*')
         .eq('code', code.toUpperCase().trim())
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
     if (error || !data) {
         return { valid: false, discount: 0, error: 'Invalid coupon code' };

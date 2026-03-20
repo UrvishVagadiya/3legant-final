@@ -270,6 +270,31 @@ export function useProductReviews(productId: string | undefined) {
     }
   };
 
+  const deleteReview = async (reviewId: string) => {
+    if (!user) return;
+    if (!window.confirm("Are you sure you want to delete your review?")) return;
+
+    const { error } = await supabase
+      .from("product_reviews")
+      .delete()
+      .eq("id", reviewId)
+      .eq("user_id", user.id);
+
+    if (!error) {
+      setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+      if (userReview?.id === reviewId) {
+        setUserReview(null);
+        setText("");
+        setRating(5);
+        setIsEditing(false);
+        setShowForm(false);
+      }
+      toast.success("Review deleted");
+    } else {
+      toast.error(error.message || "Failed to delete review");
+    }
+  };
+
   const sorted = [...reviews].sort((a, b) => {
     if (sortOption === "Highest Rating") return b.rating - a.rating;
     if (sortOption === "Lowest Rating") return a.rating - b.rating;
@@ -305,6 +330,7 @@ export function useProductReviews(productId: string | undefined) {
     toggleLike,
     replies,
     submitReply,
+    deleteReview,
   };
 }
 
@@ -394,6 +420,8 @@ export default function ReviewsSection({ productName, r }: Props) {
               replies={r.replies[review.id] || []}
               onSubmitReply={(text) => r.submitReply(review.id, text)}
               isOwner={r.currentUserId === review.user_id}
+              onEdit={r.startEdit}
+              onDelete={() => r.deleteReview(review.id)}
             />
           ))}
         </div>

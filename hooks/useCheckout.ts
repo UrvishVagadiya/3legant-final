@@ -16,7 +16,7 @@ export function useCheckout(cartItems: any[], subtotal: number, shippingCost: nu
     const handleApplyCoupon = async () => {
         if (!couponCode.trim()) return;
         setCouponLoading(true);
-        const result = await validateCoupon(couponCode.trim(), subtotal);
+        const result = await validateCoupon(couponCode.trim(), subtotal, user?.id);
         if (result.valid && result.coupon) {
             setAppliedCoupon({ id: result.coupon.id, code: result.coupon.code });
             setCouponDiscount(result.discount);

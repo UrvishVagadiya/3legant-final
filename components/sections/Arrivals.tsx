@@ -14,8 +14,8 @@ interface Product {
   price: number;
   mrp?: number;
   category?: string;
-  isNew?: boolean;
   valid_until?: string | number | null;
+  stock?: number;
 }
 
 const Arrivals = () => {
@@ -35,6 +35,7 @@ const Arrivals = () => {
     supabase
       .from("products")
       .select("*")
+      .eq("status", "active")
       .order("id", { ascending: false })
       .limit(10)
       .then(({ data, error }: { data: any[] | null; error: any }) => {

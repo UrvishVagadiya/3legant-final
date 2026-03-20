@@ -58,7 +58,8 @@ const CartItem = ({ item, onRemove, onUpdateQuantity, user }: CartItemProps) => 
             onClick={() =>
               onUpdateQuantity(item.id, item.color, item.quantity + 1, user)
             }
-            className="text-lg text-gray-500"
+            disabled={item.quantity >= item.stock}
+            className={`text-lg transition-colors ${item.quantity >= item.stock ? "text-gray-300 cursor-not-allowed" : "text-gray-500 hover:text-black"}`}
           >
             +
           </button>

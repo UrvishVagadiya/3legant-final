@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { IoMdStar, IoMdStarOutline } from "react-icons/io";
-import { X } from "lucide-react";
+import { X, Edit2, Trash2 } from "lucide-react";
 import { AiOutlineHeart, AiFillHeart } from "react-icons/ai";
 import { BsReply } from "react-icons/bs";
 
@@ -115,6 +115,8 @@ interface ReviewCardProps {
   replies: ReviewReply[];
   onSubmitReply: (text: string) => void;
   isOwner: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
 }
 
 export function ReviewCard({
@@ -124,6 +126,8 @@ export function ReviewCard({
   replies,
   onSubmitReply,
   isOwner,
+  onEdit,
+  onDelete,
 }: ReviewCardProps) {
   const [showReplyForm, setShowReplyForm] = useState(false);
   const [replyText, setReplyText] = useState("");
@@ -190,6 +194,25 @@ export function ReviewCard({
           <BsReply className="text-[16px]" />
           <span>Reply{replies.length > 0 ? ` (${replies.length})` : ""}</span>
         </button>
+
+        {isOwner && (
+          <div className="flex items-center gap-4 ml-auto">
+            <button
+              onClick={onEdit}
+              className="flex items-center gap-1.5 text-[13px] text-[#6C7275] hover:text-[#141718] transition-colors"
+            >
+              <Edit2 className="w-3.5 h-3.5" />
+              <span>Edit</span>
+            </button>
+            <button
+              onClick={onDelete}
+              className="flex items-center gap-1.5 text-[13px] text-red-500 hover:text-red-700 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span>Delete</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Replies List */}

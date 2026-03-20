@@ -37,12 +37,60 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const { id, ...payload } = body;
     const admin = createAdminClient();
+    
+    // Check current state before update to see if stock reduction is needed
+    const { data: currentOrder } = await admin
+        .from("orders")
+        .select("status, stock_reduced")
+        .eq("id", id)
+        .single();
+
+    const confirmedStatuses = ["confirmed", "processing", "shipped", "delivered"];
+    const isNewStatusConfirmed = payload.status && confirmedStatuses.includes(payload.status.toLowerCase());
+    const shouldReduceStock = isNewStatusConfirmed && currentOrder && !currentOrder.stock_reduced;
+
     const { data, error } = await admin
         .from("orders")
         .update(payload)
         .eq("id", id)
         .select("*, payments(status)")
         .single();
+    
+    if (!error && data && shouldReduceStock) {
+        // Fetch order items to reduce stock
+        const { data: items } = await admin
+            .from("order_items")
+            .select("product_id, quantity")
+            .eq("order_id", id);
+        
+        if (items && items.length > 0) {
+            const { error: stockError } = await admin.rpc("reduce_product_stock", {
+                items: items.map(i => ({
+                    product_id: i.product_id,
+                    quantity: i.quantity
+                }))
+            });
+            
+            if (!stockError) {
+                await admin.from("orders").update({ stock_reduced: true }).eq("id", id);
+                // Refresh data with updated stock_reduced flag
+                const { data: updatedData } = await admin
+                    .from("orders")
+                    .select("*, payments(status)")
+                    .eq("id", id)
+                    .single();
+                if (updatedData) {
+                    return NextResponse.json({
+                        ...updatedData,
+                        payment_status: updatedData.payments?.[0]?.status || "unknown",
+                        refund_status: updatedData.refund_status || 'none'
+                    });
+                }
+            } else {
+                console.error("Manual stock reduction error:", stockError);
+            }
+        }
+    }
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 

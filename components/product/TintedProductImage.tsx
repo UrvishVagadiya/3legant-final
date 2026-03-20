@@ -13,7 +13,7 @@ export default function TintedProductImage({ colorHex, ...imageProps }: Props) {
           className="absolute inset-0 pointer-events-none transition-colors duration-300"
           style={{
             backgroundColor: colorHex,
-            opacity: 0.2,
+            opacity: 0.05,
             mixBlendMode: "color",
           }}
           aria-hidden="true"

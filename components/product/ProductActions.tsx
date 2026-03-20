@@ -9,6 +9,7 @@ interface Props {
   isWishlisted: boolean;
   onWishlistToggle: () => void;
   onAddToCart: () => void;
+  stock?: number;
 }
 
 export default function ProductActions({
@@ -18,21 +19,25 @@ export default function ProductActions({
   isWishlisted,
   onWishlistToggle,
   onAddToCart,
+  stock = 0,
 }: Props) {
+  const isOutOfStock = stock <= 0;
   return (
     <div className="flex flex-col gap-4 py-6 border-b border-[#E8ECEF] w-full">
       <div className="flex gap-4 h-13">
         <div className="flex items-center justify-between bg-[#F3F5F7] rounded-lg w-30 px-4 font-medium">
           <button
             onClick={onDecrease}
-            className="p-1 cursor-pointer hover:bg-gray-200 rounded text-[#141718] transition-colors"
+            disabled={isOutOfStock}
+            className={`p-1 ${isOutOfStock ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-gray-200"} rounded text-[#141718] transition-colors`}
           >
             <Minus className="w-4 h-4" />
           </button>
           <span>{quantity}</span>
           <button
             onClick={onIncrease}
-            className="p-1 cursor-pointer hover:bg-gray-200 rounded text-[#141718] transition-colors"
+            disabled={isOutOfStock}
+            className={`p-1 ${isOutOfStock ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-gray-200"} rounded text-[#141718] transition-colors`}
           >
             <Plus className="w-4 h-4" />
           </button>
@@ -51,9 +56,10 @@ export default function ProductActions({
       </div>
       <button
         onClick={onAddToCart}
-        className="w-full cursor-pointer scale-95 bg-[#141718] text-white rounded-lg h-13 font-medium text-[16px] tracking-tight hover:bg-black transition-colors"
+        disabled={isOutOfStock}
+        className={`w-full ${isOutOfStock ? "bg-gray-400 cursor-not-allowed" : "cursor-pointer bg-[#141718] hover:bg-black"} scale-95 text-white rounded-lg h-13 font-medium text-[16px] tracking-tight transition-colors`}
       >
-        Add to Cart
+        {isOutOfStock ? "Out of Stock" : "Add to Cart"}
       </button>
     </div>
   );

@@ -10,6 +10,7 @@ export interface CartItem {
     image: string;
     color: string;
     quantity: number;
+    stock: number;
 }
 
 interface CartState {
@@ -43,12 +44,20 @@ export const useCartStore = create<CartState>()(
                 set((state) => {
                     const existingItem = state.items.find(i => i.id === safeItem.id && i.color === safeItem.color);
                     if (existingItem) {
+                        // Limit by stock
+                        if (existingItem.quantity >= safeItem.stock) {
+                            toast.error(`Only ${safeItem.stock} items available in stock`, {
+                                id: 'stock-limit-error',
+                            });
+                            return state;
+                        }
                         return { items: state.items.map(i => (i.id === safeItem.id && i.color === safeItem.color) ? { ...i, quantity: i.quantity + 1 } : i) };
                     }
                     return { items: [...state.items, { ...safeItem, quantity: 1 }] };
                 });
                 toast.success(`${item.name} added to cart!`, {
                     style: { borderRadius: '8px', background: '#141718', color: '#fff' },
+                    id: 'add-to-cart-success',
                 });
                 get().syncCartToDb(user);
             },
@@ -60,7 +69,7 @@ export const useCartStore = create<CartState>()(
 
             updateQuantity: (id, color, quantity, user?: any) => {
                 set((state) => ({
-                    items: state.items.map(i => (i.id === id && i.color === color) ? { ...i, quantity: Math.max(1, quantity) } : i)
+                    items: state.items.map(i => (i.id === id && i.color === color) ? { ...i, quantity: Math.min(i.stock, Math.max(1, quantity)) } : i)
                 }));
                 get().syncCartToDb(user);
             },
@@ -96,7 +105,7 @@ export const useCartStore = create<CartState>()(
                 const supabase = createClient();
                 const { data, error } = await supabase
                     .from('cart')
-                    .select('*, products(id, title, price, img)')
+                    .select('*, products(id, title, price, img, stock)')
                     .eq('user_id', user.id);
 
                 if (!error && data && data.length > 0) {
@@ -107,6 +116,7 @@ export const useCartStore = create<CartState>()(
                         image: row.products?.img || '/image-1.png',
                         color: row.color || 'Default',
                         quantity: row.quantity,
+                        stock: row.products?.stock || 0,
                     }));
                     set({ items: dbItems });
                 }

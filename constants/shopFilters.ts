@@ -1,5 +1,5 @@
 export const categories = [
-    "All Rooms", "Living Room", "Bedroom", "Kitchen", "Bathroom", "Dinning", "Outdoor",
+    "All Rooms", "Living Room", "Bedroom", "Kitchen", "Bathroom", "Dinning", "Outdoor", "Office"
 ];
 
 export const priceRanges = [

@@ -18,8 +18,6 @@ interface Props {
   payment: Payment;
   refundAmount: string;
   setRefundAmount: (v: string) => void;
-  refundReason: string;
-  setRefundReason: (v: string) => void;
   refunding: boolean;
   onRefund: () => void;
   onClose: () => void;
@@ -29,8 +27,6 @@ export default function RefundModal({
   payment,
   refundAmount,
   setRefundAmount,
-  refundReason,
-  setRefundReason,
   refunding,
   onRefund,
   onClose,
@@ -92,27 +88,6 @@ export default function RefundModal({
             <p className="text-xs text-[#6C7275] mt-1">
               Leave empty for full refund
             </p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-[#141718] mb-1">
-              Refund Reason
-            </label>
-            <select
-              value={refundReason}
-              onChange={(e) => setRefundReason(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-[#141718] mb-2"
-            >
-              <option value="">Select a reason...</option>
-              <option value="requested_by_customer">
-                Requested by customer
-              </option>
-              <option value="duplicate">Duplicate payment</option>
-              <option value="fraudulent">Fraudulent charge</option>
-              <option value="product_not_received">Product not received</option>
-              <option value="product_damaged">Product damaged/defective</option>
-              <option value="wrong_product">Wrong product shipped</option>
-              <option value="other">Other</option>
-            </select>
           </div>
           <div className="flex gap-3 pt-2">
             <button

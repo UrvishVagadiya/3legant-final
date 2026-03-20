@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
             const productIds = parsedItems.map((i: any) => i.id || i.product_id);
             const { data: products } = await admin
                 .from("products")
-                .select("id, title, img, price")
+                .select("id, title, img, price, stock")
                 .in("id", productIds);
 
             const productMap = new Map(products?.map(p => [p.id, p]) || []);
@@ -168,6 +168,26 @@ export async function POST(req: NextRequest) {
 
             if (itemsError) {
                 console.error("Failed to create order items:", itemsError);
+            } else {
+                // REDUCE STOCK (Only if order items were successfully created)
+                const stockItems = parsedItems.map((item: any) => ({
+                    product_id: item.id || item.product_id,
+                    quantity: item.qty || item.quantity || 1
+                }));
+
+                const { error: stockError } = await admin.rpc("reduce_product_stock", {
+                    items: stockItems
+                });
+
+                if (stockError) {
+                    console.error("Failed to reduce stock via RPC:", stockError);
+                } else {
+                    console.log("Successfully reduced stock for order items via RPC");
+                    await admin
+                        .from("orders")
+                        .update({ stock_reduced: true })
+                        .eq("id", order.id);
+                }
             }
 
             // Get payment details from Stripe

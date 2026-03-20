@@ -16,7 +16,7 @@ export async function GET() {
     const admin = createAdminClient();
     const { data, error } = await admin
         .from("payments")
-        .select("*, orders(order_code, shipping_first_name, shipping_last_name)")
+        .select("*, orders(order_code, shipping_first_name, shipping_last_name, refund_status)")
         .order("created_at", { ascending: false });
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

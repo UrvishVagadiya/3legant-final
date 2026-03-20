@@ -99,7 +99,8 @@ export default function CartDrawer() {
                     onClick={() =>
                       updateQuantity(item.id, item.color, item.quantity + 1, user)
                     }
-                    className="text-[#141718]"
+                    disabled={item.quantity >= item.stock}
+                    className={`${item.quantity >= item.stock ? "text-gray-300 cursor-not-allowed" : "text-[#141718] hover:text-black"} transition-colors`}
                   >
                     <Plus className="w-3 h-3" />
                   </button>

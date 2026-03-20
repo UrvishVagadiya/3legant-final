@@ -1,7 +1,7 @@
 "use client";
 
 import { DisplayProduct } from "@/components/product/DisplayProduct";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { initialCartItems } from "@/constants/products";
@@ -10,6 +10,7 @@ import { ProductDetailsSkeleton } from "@/components/ui/ProductDetailsSkeleton";
 
 export default function ProductPage() {
   const { productId } = useParams<{ productId: string }>();
+  const router = useRouter();
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
@@ -23,6 +24,19 @@ export default function ProductPage() {
         .eq("id", productId)
         .maybeSingle();
 
+      if (error) {
+        console.error("Error fetching product:", error);
+        router.push("/shop");
+        return;
+      }
+      if (!data) {
+        router.push("/shop");
+        return;
+      }
+      if (data.status !== "active") {
+        router.push("/shop");
+        return;
+      }
       if (!error && data) {
         setProduct({
           id: data.id,
@@ -45,6 +59,7 @@ export default function ProductPage() {
           image_url: data.img,
           measurements: data.measurements || "",
           weight: data.weight || "",
+          stock: data.stock ?? 0,
         });
       } else {
         setProduct(initialCartItems[0]);

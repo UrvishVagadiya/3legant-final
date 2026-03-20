@@ -12,9 +12,9 @@ interface Product {
   title: string;
   price: number;
   mrp?: number;
-  isNew?: boolean;
   valid_until?: string | number | null;
   color?: string[] | string;
+  stock?: number;
 }
 
 interface ArrivalCardProps {
@@ -47,6 +47,7 @@ const ArrivalCard = ({
     const firstColor = colorOptions[0];
     const colorHex = firstColor ? colorMap[firstColor] : null;
     const shouldTint = firstColor && firstColor.toLowerCase() !== "white";
+    const isOutOfStock = (card.stock ?? 0) <= 0;
 
   return (
     <Link
@@ -87,11 +88,11 @@ const ArrivalCard = ({
           </div>
         </div>
         <div
-          onClick={(e) => handleAddToCart(e, card)}
-          className="absolute opacity-0 group-hover:opacity-100 transition-all duration-300 left-3 right-3 md:left-4 md:right-4 bottom-3 md:bottom-4 py-2 md:py-3 rounded-lg bg-black flex items-center justify-center cursor-pointer shadow-lg hover:bg-gray-800 hover:scale-[1.02]"
+          onClick={!isOutOfStock ? (e) => handleAddToCart(e, card) : undefined}
+          className={`absolute ${isOutOfStock ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-all duration-300 left-3 right-3 md:left-4 md:right-4 bottom-3 md:bottom-4 py-2 md:py-3 rounded-lg ${isOutOfStock ? "bg-gray-400 cursor-not-allowed" : "bg-black cursor-pointer hover:bg-gray-800 hover:scale-[1.02]"} flex items-center justify-center shadow-lg`}
         >
           <h2 className="text-white font-medium text-sm md:text-base">
-            Add to cart
+            {isOutOfStock ? "Out of Stock" : "Add to cart"}
           </h2>
         </div>
       </div>

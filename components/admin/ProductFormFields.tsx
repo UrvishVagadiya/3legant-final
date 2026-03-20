@@ -2,24 +2,34 @@
 import React, { ChangeEvent } from "react";
 import { ProductFormData } from "./ProductFormModal";
 
-const categories = [
+import { ProductCategory, ProductColor } from "./ProductTableRow";
+
+const categories: ProductCategory[] = [
   "Living Room",
   "Bedroom",
   "Kitchen",
   "Bathroom",
   "Dinning",
   "Outdoor",
+  "Office",
 ];
-const colorOptions = [
+const colorOptions: ProductColor[] = [
   "Black",
   "White",
   "Brown",
-  "Gray",
-  "Blue",
   "Red",
+  "Blue",
   "Green",
-  "Yellow",
+  "Gray",
   "Beige",
+  "Navy",
+  "Pink",
+  "Yellow",
+  "Orange",
+  "Purple",
+  "Cream",
+  "Walnut",
+  "Natural",
 ];
 
 const Input = ({
@@ -213,8 +223,7 @@ export default function ProductFormFields({
           className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-[#141718]"
         >
           <option value="active">Active</option>
-          <option value="draft">Draft</option>
-          <option value="archived">Archived</option>
+          <option value="inactive">Inactive</option>
         </select>
       </div>
       <CheckboxGroup

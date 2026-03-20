@@ -43,7 +43,7 @@ export async function middleware(request: NextRequest) {
             .from("user_profiles")
             .select("role")
             .eq("id", user.id)
-            .single();
+            .maybeSingle();
 
         if (error || profile?.role !== "admin") {
             console.error("Middleware admin check failed:", error || "Not an admin");

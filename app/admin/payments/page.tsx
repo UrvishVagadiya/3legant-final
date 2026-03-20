@@ -10,6 +10,7 @@ interface Payment {
   card_last_four: string | null; card_brand: string | null;
   refund_amount: number | null; refund_date: string | null; refund_reason: string | null;
   payment_date: string | null; created_at: string; order_code?: string; customer_name?: string;
+  refund_status?: string;
 }
 
 const statusBadge = (s: string) => ({ pending: "bg-yellow-100 text-yellow-700", completed: "bg-green-100 text-green-700", failed: "bg-red-100 text-red-700", refunded: "bg-purple-100 text-purple-700" }[s] || "bg-gray-100 text-gray-700");
@@ -21,14 +22,18 @@ export default function AdminPayments() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [refundModal, setRefundModal] = useState<Payment | null>(null);
   const [refundAmount, setRefundAmount] = useState("");
-  const [refundReason, setRefundReason] = useState("");
   const [refunding, setRefunding] = useState(false);
 
   const fetchPayments = async () => {
     const res = await fetch("/api/admin/payments");
     if (res.ok) {
       const data = await res.json();
-      setPayments(data.map((p: any) => ({ ...p, order_code: p.orders?.order_code || "N/A", customer_name: p.orders ? `${p.orders.shipping_first_name} ${p.orders.shipping_last_name}` : "N/A" })));
+      setPayments(data.map((p: any) => ({ 
+        ...p, 
+        order_code: p.orders?.order_code || "N/A", 
+        customer_name: p.orders ? `${p.orders.shipping_first_name} ${p.orders.shipping_last_name}` : "N/A",
+        refund_status: p.orders?.refund_status || "none"
+      })));
     }
     setLoading(false);
   };
@@ -42,9 +47,9 @@ export default function AdminPayments() {
       const max = Number(refundModal.amount) - Number(refundModal.refund_amount || 0);
       const amount = refundAmount ? Math.min(parseFloat(refundAmount), max) : max;
       if (amount <= 0) { toast.error("Invalid refund amount"); setRefunding(false); return; }
-      const res = await fetch("/api/admin/refund", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: refundModal.id, amount, reason: refundReason || "Requested by customer" }) });
+      const res = await fetch("/api/admin/refund", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ paymentId: refundModal.id, amount }) });
       const data = await res.json();
-      if (res.ok) { toast.success(`Refund of $${data.refundAmount.toFixed(2)} processed successfully`); setRefundModal(null); setRefundAmount(""); setRefundReason(""); await fetchPayments(); }
+      if (res.ok) { toast.success(`Refund of $${data.refundAmount.toFixed(2)} processed successfully`); setRefundModal(null); setRefundAmount(""); await fetchPayments(); }
       else toast.error(data.error || "Failed to process refund");
     } catch { toast.error("Failed to process refund"); }
     finally { setRefunding(false); }
@@ -100,7 +105,6 @@ export default function AdminPayments() {
                   <td className="px-6 py-4 font-medium text-[#141718]">
                     ${Number(p.amount).toFixed(2)}
                     {p.refund_amount ? <span className="block text-xs text-red-500">Refund: ${Number(p.refund_amount).toFixed(2)}</span> : null}
-                    {p.refund_reason && <span className="block text-xs text-gray-400 italic">{p.refund_reason}</span>}
                   </td>
                   <td className="px-6 py-4"><span className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${statusBadge(p.status)}`}>{p.status}</span></td>
                   <td className="px-6 py-4 text-[#6C7275] font-mono text-xs">{p.transaction_id || "—"}</td>
@@ -109,8 +113,8 @@ export default function AdminPayments() {
                     {p.refund_date && <span className="block text-xs text-purple-500">Refunded: {new Date(p.refund_date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>}
                   </td>
                   <td className="px-6 py-4">
-                    {p.transaction_id && p.status !== "refunded" && (
-                      <button onClick={() => { setRefundModal(p); setRefundAmount(""); setRefundReason(""); }} className="flex items-center gap-1 text-xs font-medium text-purple-600 hover:text-purple-800 transition-colors"><RotateCcw size={14} /> Refund</button>
+                    {p.transaction_id && p.status !== "refunded" && p.refund_status === "requested" && (
+                      <button onClick={() => { setRefundModal(p); setRefundAmount(""); }} className="flex items-center gap-1 text-xs font-medium text-purple-600 hover:text-purple-800 transition-colors"><RotateCcw size={14} /> Refund</button>
                     )}
                     {p.status === "refunded" && <span className="text-xs text-gray-400">Refunded</span>}
                   </td>
@@ -122,7 +126,7 @@ export default function AdminPayments() {
         </div>
       </div>
 
-      {refundModal && <RefundModal payment={refundModal} refundAmount={refundAmount} setRefundAmount={setRefundAmount} refundReason={refundReason} setRefundReason={setRefundReason} refunding={refunding} onRefund={handleRefund} onClose={() => setRefundModal(null)} />}
+      {refundModal && <RefundModal payment={refundModal} refundAmount={refundAmount} setRefundAmount={setRefundAmount} refunding={refunding} onRefund={handleRefund} onClose={() => setRefundModal(null)} />}
     </div>
   );
 }

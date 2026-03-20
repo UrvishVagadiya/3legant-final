@@ -17,6 +17,7 @@ interface Product {
   isNew?: boolean;
   valid_until?: string | number | null;
   color?: string[] | string;
+  stock?: number;
 }
 
 interface ShopProductCardProps {
@@ -55,6 +56,7 @@ const ShopProductCard = ({
     const firstColor = colorOptions[0];
     const colorHex = firstColor ? colorMap[firstColor] : null;
     const shouldTint = firstColor && firstColor.toLowerCase() !== "white";
+    const isOutOfStock = (card.stock ?? 0) <= 0;
 
   return (
     <Link
@@ -101,11 +103,11 @@ const ShopProductCard = ({
         </div>
 
         <div
-          onClick={(e) => handleAddToCart(e, card)}
-          className={`absolute opacity-0 group-hover:opacity-100 transition-all duration-300 left-3 right-3 md:left-4 md:right-4 bottom-3 md:bottom-4 py-2 md:py-3 rounded-lg bg-black text-center cursor-pointer shadow-lg hover:bg-gray-800 hover:scale-[1.02] ${overlayClass}`}
+          onClick={!isOutOfStock ? (e) => handleAddToCart(e, card) : undefined}
+          className={`absolute ${isOutOfStock ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-all duration-300 left-3 right-3 md:left-4 md:right-4 bottom-3 md:bottom-4 py-2 md:py-3 rounded-lg ${isOutOfStock ? "bg-gray-400 cursor-not-allowed" : "bg-black cursor-pointer shadow-lg hover:bg-gray-800 hover:scale-[1.02]"} text-center ${overlayClass}`}
         >
           <h2 className="text-white font-medium text-sm md:text-base">
-            Add to cart
+            {isOutOfStock ? "Out of Stock" : "Add to cart"}
           </h2>
         </div>
       </div>
@@ -145,10 +147,11 @@ const ShopProductCard = ({
           </p>
           <div className="flex flex-col gap-3 lg:gap-4 lg:max-w-70">
             <button
-              onClick={(e) => handleAddToCart(e, card)}
-              className="w-full py-2.5 lg:py-3 bg-[#141718] text-white rounded font-medium text-sm lg:text-[15px] hover:bg-black transition-colors"
+              onClick={!isOutOfStock ? (e) => handleAddToCart(e, card) : undefined}
+              disabled={isOutOfStock}
+              className={`w-full py-2.5 lg:py-3 ${isOutOfStock ? "bg-gray-400 cursor-not-allowed" : "bg-[#141718] hover:bg-black"} text-white rounded font-medium text-sm lg:text-[15px] transition-colors`}
             >
-              Add to cart
+              {isOutOfStock ? "Out of Stock" : "Add to cart"}
             </button>
             <button
               onClick={(e) => handleWishlistToggle(e, card)}

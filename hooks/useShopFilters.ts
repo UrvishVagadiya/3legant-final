@@ -16,6 +16,7 @@ export function useShopFilters() {
         supabase
             .from("products")
             .select("*")
+            .eq("status", "active")
             .then(({ data, error }: { data: any[] | null; error: any }) => {
                 if (error) {
                     console.error("Error fetching shop products:", error);

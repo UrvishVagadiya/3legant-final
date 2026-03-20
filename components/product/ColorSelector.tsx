@@ -9,7 +9,6 @@ export const colorMap: Record<string, string> = {
   Blue: "#2563EB",
   Green: "#16A34A",
   Gray: "#6B7280",
-  Grey: "#6B7280",
   Beige: "#D4C5A9",
   Navy: "#1E3A5F",
   Pink: "#EC4899",

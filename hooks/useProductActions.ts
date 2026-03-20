@@ -15,6 +15,7 @@ interface ProductLike {
     img?: string;
     image_url?: string;
     color?: string[] | string;
+    stock?: number;
 }
 
 import { useAuth } from "@/context/AuthContext";
@@ -86,6 +87,7 @@ export function useProductActions() {
                 price: product.price,
                 image: product.img || product.image_url || "/image-1.png",
                 color: selectedColor,
+                stock: Number(product.stock) || 0,
             });
             // We pass user when syncing if needed, but addToCart calls syncCartToDb
             // Let's make sure addToCart uses the user if possible.

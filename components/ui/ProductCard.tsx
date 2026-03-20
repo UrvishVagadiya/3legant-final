@@ -21,6 +21,7 @@ interface ProductCardProps {
     isNew?: boolean;
     valid_until?: string | number | null;
     color?: string[] | string;
+    stock?: number;
   };
   isMounted: boolean;
   isWishlisted: boolean;
@@ -85,6 +86,8 @@ const ProductCard = ({
   const colorHex = firstColor ? colorMap[firstColor] : null;
   const shouldTint = firstColor && firstColor.toLowerCase() !== "white";
 
+  const isOutOfStock = (product.stock ?? 0) <= 0;
+
   const card = (
     <div className="group relative flex flex-col">
       <div className="relative bg-[#F3F5F7] flex items-center justify-center overflow-hidden rounded w-full aspect-4/5">
@@ -129,13 +132,13 @@ const ProductCard = ({
         </div>
 
         <div
-          onClick={onAddToCart}
-          className={`absolute opacity-0 group-hover:opacity-100 transition-all duration-300 left-3 right-3 ${isSmall ? "md:left-4 md:right-4 bottom-3 md:bottom-4 py-2 md:py-3 rounded-lg" : "bottom-3 py-2.5 rounded"} bg-[#141718] flex items-center justify-center cursor-pointer shadow-lg hover:bg-black`}
+          onClick={!isOutOfStock ? onAddToCart : undefined}
+          className={`absolute ${isOutOfStock ? "opacity-100" : "opacity-0 group-hover:opacity-100"} transition-all duration-300 left-3 right-3 ${isSmall ? "md:left-4 md:right-4 bottom-3 md:bottom-4 py-2 md:py-3 rounded-lg" : "bottom-3 py-2.5 rounded"} ${isOutOfStock ? "bg-gray-400 cursor-not-allowed" : "bg-[#141718] cursor-pointer hover:bg-black"} flex items-center justify-center shadow-lg`}
         >
           <h2
             className={`text-white font-medium ${isSmall ? "text-sm md:text-base" : "text-sm"}`}
           >
-            Add to cart
+            {isOutOfStock ? "Out of Stock" : "Add to cart"}
           </h2>
         </div>
       </div>

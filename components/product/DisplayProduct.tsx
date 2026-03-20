@@ -92,6 +92,7 @@ export const DisplayProduct = ({ p }: { p: any }) => {
         price,
         image: img,
         color: selectedColor,
+        stock: p.stock || 0,
       }, user);
       if (quantity > 1)
         setTimeout(
@@ -226,10 +227,11 @@ export const DisplayProduct = ({ p }: { p: any }) => {
           <ProductActions
             quantity={quantity}
             onDecrease={() => setQuantity((q) => Math.max(1, q - 1))}
-            onIncrease={() => setQuantity((q) => q + 1)}
+            onIncrease={() => setQuantity((q) => p.stock > 0 ? Math.min(p.stock, q + 1) : q + 1)}
             isWishlisted={isMounted && wishlistItems.some((i) => i.id == pid)}
             onWishlistToggle={handleWishlistToggle}
             onAddToCart={handleAddToCart}
+            stock={p.stock}
           />
 
           <div className="flex flex-col gap-3 py-2 text-[#6C7275] text-[12px]">

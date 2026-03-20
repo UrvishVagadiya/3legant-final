@@ -61,7 +61,7 @@ export default function OrderSummary({
       <div className="space-y-4 mb-6 max-h-100 overflow-y-auto pr-2">
         {cartItems.map((item) => (
           <div key={item.id} className="flex gap-4 items-center">
-            <div 
+            <div
               className="relative w-16 h-20 bg-[#F3F5F7] rounded shrink-0 flex items-center justify-center"
               style={{ backgroundColor: (item.color?.toLowerCase() !== 'white' && colorMap[item.color]) ? colorMap[item.color] : undefined }}
             >
@@ -127,13 +127,13 @@ export default function OrderSummary({
       </div>
 
       <div className="mb-6">
-        <CouponSuggestions 
+        <CouponSuggestions
           onSelect={(code: string) => {
             setCouponCode(code);
             // Use a short timeout to ensure state is updated before applying
             setTimeout(() => onApplyCoupon(), 0);
-          }} 
-          subtotal={subtotal} 
+          }}
+          subtotal={subtotal}
         />
       </div>
 
@@ -141,11 +141,10 @@ export default function OrderSummary({
         {shippingOptions.map((opt) => (
           <label
             key={opt.value}
-            className={`flex items-center justify-between border rounded p-3 cursor-pointer transition-colors ${
-              shippingMethod === opt.value
+            className={`flex items-center justify-between border rounded p-3 cursor-pointer transition-colors ${shippingMethod === opt.value
                 ? "border-black bg-gray-50"
                 : "border-gray-200 hover:border-gray-400"
-            }`}
+              }`}
           >
             <div className="flex items-center gap-3">
               <input

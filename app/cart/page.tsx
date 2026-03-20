@@ -39,7 +39,7 @@ const Cart = () => {
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
     setCouponLoading(true);
-    const result = await validateCoupon(couponCode.trim(), subtotal);
+    const result = await validateCoupon(couponCode.trim(), subtotal, user?.id);
     if (result.valid && result.coupon) {
       setAppliedCoupon(result.coupon.code);
       setDiscount(result.discount);

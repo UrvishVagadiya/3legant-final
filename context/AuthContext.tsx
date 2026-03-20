@@ -32,23 +32,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .from("user_profiles")
           .select("role")
           .eq("id", userId)
-          .single();
+          .maybeSingle();
         
         if (mounted) {
           if (error) {
-            if (error.code === "PGRST116" && initialUser) {
-              await supabase.from("user_profiles").insert({
-                id: initialUser.id,
-                email: initialUser.email,
-                role: "user",
-                full_name: initialUser.user_metadata?.full_name || "User",
-                display_name: initialUser.user_metadata?.display_name || initialUser.email?.split("@")[0] || "User",
-              });
-              setRole("user");
-              localStorage.setItem(`user-role-${userId}`, "user");
-            } else {
-              setRole("user");
-            }
+            setRole("user");
+          } else if (!data && initialUser) {
+            // Not found, insert new profile
+            await supabase.from("user_profiles").insert({
+              id: initialUser.id,
+              email: initialUser.email,
+              role: "user",
+              full_name: initialUser.user_metadata?.full_name || "User",
+              display_name: initialUser.user_metadata?.display_name || initialUser.email?.split("@")[0] || "User",
+            });
+            setRole("user");
+            localStorage.setItem(`user-role-${userId}`, "user");
           } else {
             const fetchedRole = data?.role || "user";
             setRole(fetchedRole);

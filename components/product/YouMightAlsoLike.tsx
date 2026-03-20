@@ -21,6 +21,7 @@ export default function YouMightAlsoLike() {
       const { data } = await supabase
         .from("products")
         .select("*")
+        .eq("status", "active")
         .limit(6);
       if (data) {
         setProducts(data);
