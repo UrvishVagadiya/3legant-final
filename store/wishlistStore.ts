@@ -9,6 +9,7 @@ export interface WishlistItem {
     image: string;
     color?: string;
     MRP?: number;
+    stock: number;
 }
 
 interface WishlistState {
@@ -75,7 +76,7 @@ export const useWishlistStore = create<WishlistState>()(
                 const supabase = createClient();
                 const { data, error } = await supabase
                     .from('wishlist')
-                    .select('*, products(id, title, price, mrp, img)')
+                    .select('*, products(id, title, price, mrp, img, stock)')
                     .eq('user_id', user.id);
 
                 if (!error && data && data.length > 0) {
@@ -85,6 +86,7 @@ export const useWishlistStore = create<WishlistState>()(
                         price: row.products?.price || 0,
                         MRP: row.products?.mrp ? Number(row.products.mrp) : undefined,
                         image: row.products?.img || '/image-1.png',
+                        stock: row.products?.stock || 0,
                     }));
                     set({ items: dbItems });
                 }

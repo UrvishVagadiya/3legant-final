@@ -6,30 +6,18 @@ import { isOfferExpired } from "@/utils/isOfferExpired";
 import { colorMap } from "../product/ColorSelector";
 import TintedProductImage from "../product/TintedProductImage";
 
-interface Product {
-  id: number;
-  img: string;
-  title: string;
-  price: number;
-  MRP: number;
-  mrp?: number;
-  category: string;
-  isNew?: boolean;
-  valid_until?: string | number | null;
-  color?: string[] | string;
-  stock?: number;
-}
+import { Product } from "@/store/productStore";
 
 interface ShopProductCardProps {
   card: Product;
   viewGrid: number;
   mobileViewGrid: number;
   isMounted: boolean;
-  isInWishlist: (id: number) => boolean;
+  isInWishlist: (id: number | string) => boolean;
   wishlistItems: any[];
   handleWishlistToggle: (e: React.MouseEvent, card: Product) => void;
   handleAddToCart: (e: React.MouseEvent, card: Product) => void;
-  getRating: (id: number) => { avgRating: number };
+  getRating: (id: number | string) => { avgRating: number };
 }
 
 const ShopProductCard = ({

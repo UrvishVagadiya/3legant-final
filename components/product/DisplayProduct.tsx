@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MdKeyboardArrowRight } from "react-icons/md";
 import { IoMdStar, IoMdStarOutline, IoMdStarHalf } from "react-icons/io";
 import { useWishlistStore } from "../../store/wishlistStore";
@@ -16,7 +16,8 @@ import ProductActions from "./ProductActions";
 import AccordionItem from "./AccordionItem";
 import AdditionalInfo from "./AdditionalInfo";
 import FAQList from "./FAQList";
-import ReviewsSection, { useProductReviews } from "./ReviewsSection";
+import ReviewsSection from "./ReviewsSection";
+import { useReviewStore } from "@/store/reviewStore";
 import TintedProductImage from "./TintedProductImage";
 
 const refImages = [
@@ -43,7 +44,12 @@ export const DisplayProduct = ({ p }: { p: any }) => {
   const [selectedColor, setSelectedColor] = useState(
     colorOptions[0] || "Black",
   );
-  const reviews = useProductReviews(p.id);
+  const { reviewsByProduct, fetchReviews } = useReviewStore();
+  const reviews = reviewsByProduct[p.id] || [];
+  
+  useEffect(() => {
+    fetchReviews(p.id, user?.id);
+  }, [p.id, user?.id, fetchReviews]);
   const {
     items: wishlistItems,
     addToWishlist,
@@ -66,7 +72,7 @@ export const DisplayProduct = ({ p }: { p: any }) => {
   const price = expired && rawMrp > rawPrice ? rawMrp : rawPrice;
   const mrp = expired ? 0 : rawMrp;
 
-  const img = p.img || p.image_url || refImages[0];
+  const img = p.img || p.image_url || p.image || refImages[0];
   const colorHex = colorMap[selectedColor] || "#6B7280";
   const shouldTint = selectedColor.toLowerCase() !== "white";
 
@@ -81,6 +87,7 @@ export const DisplayProduct = ({ p }: { p: any }) => {
           MRP: mrp,
           image: refImages[0],
           color: selectedColor,
+          stock: p.stock || 0,
         }, user);
     });
 
@@ -102,6 +109,12 @@ export const DisplayProduct = ({ p }: { p: any }) => {
     });
 
   if (!isMounted) return null;
+
+  const avgRating = reviews.length > 0 ? reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length : 0;
+
+  const productImages = p.images && Array.isArray(p.images) && p.images.length > 0 
+    ? p.images 
+    : [img, ...refImages.slice(1)];
 
   return (
     <div className="w-full max-w-full overflow-x-hidden px-4 md:px-8 xl:px-40 py-4 md:py-10">
@@ -126,7 +139,7 @@ export const DisplayProduct = ({ p }: { p: any }) => {
           </>
         )}
         <MdKeyboardArrowRight className="text-xl" />
-        <span className="text-[#141718]">{p.name || "Product"}</span>
+        <span className="text-[#141718]">{p.name || p.title || "Product"}</span>
       </div>
 
       <div className="w-full max-w-full grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 relative overflow-hidden">
@@ -154,7 +167,7 @@ export const DisplayProduct = ({ p }: { p: any }) => {
                 )}
               </div>
               <TintedProductImage
-                src={img}
+                src={productImages[0]}
                 alt="Product view 1"
                 fill
                 unoptimized
@@ -162,14 +175,14 @@ export const DisplayProduct = ({ p }: { p: any }) => {
                 colorHex={shouldTint ? colorHex : null}
               />
             </div>
-            {[1, 2, 3, 4, 5].map((n) => (
+            {productImages.slice(1, 6).map((itemSrc: string, n: number) => (
               <div
                 key={n}
                 className="relative w-full aspect-3/4 bg-[#F3F5F7] hidden sm:block"
               >
                 <Image
-                  src={refImages[n]}
-                  alt={`Product view ${n + 1}`}
+                  src={itemSrc}
+                  alt={`Product view ${n + 2}`}
                   fill
                   unoptimized
                   className="w-full h-full max-w-full object-cover object-center transition-all duration-500"
@@ -184,9 +197,9 @@ export const DisplayProduct = ({ p }: { p: any }) => {
             <div className="flex items-center gap-2">
               <div className="flex text-[#141718] text-[14px]">
                 {[1, 2, 3, 4, 5].map((s) =>
-                  reviews.avg >= s ? (
+                  avgRating >= s ? (
                     <IoMdStar key={s} />
-                  ) : reviews.avg >= s - 0.5 ? (
+                  ) : avgRating >= s - 0.5 ? (
                     <IoMdStarHalf key={s} />
                   ) : (
                     <IoMdStarOutline key={s} />
@@ -194,8 +207,8 @@ export const DisplayProduct = ({ p }: { p: any }) => {
                 )}
               </div>
               <span className="text-[#141718] text-sm">
-                {reviews.reviews.length} Review
-                {reviews.reviews.length !== 1 ? "s" : ""}
+                {reviews.length} Review
+                {reviews.length !== 1 ? "s" : ""}
               </span>
             </div>
             <h1 className="font-poppins text-3xl md:text-[40px] font-medium leading-tight text-[#141718]">
@@ -273,7 +286,7 @@ export const DisplayProduct = ({ p }: { p: any }) => {
             </AccordionItem>
             <AccordionItem
               id="reviews"
-              title={`Reviews (${reviews.reviews.length})`}
+              title={`Reviews (${reviews.length})`}
               isOpen={openAccordion === "reviews"}
               onToggle={(id) =>
                 setOpenAccordion(openAccordion === id ? null : id)
@@ -281,7 +294,7 @@ export const DisplayProduct = ({ p }: { p: any }) => {
               maxHeight="max-h-[800px]"
               borderClass="border-y border-[#E8ECEF]"
             >
-              <ReviewsSection productName={p.name || "Product"} r={reviews} />
+              <ReviewsSection productId={p.id} productName={p.name || "Product"} />
             </AccordionItem>
           </div>
         </div>

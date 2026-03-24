@@ -39,16 +39,18 @@ interface Props {
   formData: ProductFormData;
   setFormData: React.Dispatch<React.SetStateAction<ProductFormData>>;
   editingId: string | null;
+  imageFiles: (File | null)[];
   submitting: boolean;
   onSubmit: (e: FormEvent) => void;
   onClose: () => void;
-  onImageChange: (file: File) => void;
+  onImageChange: (files: (File | null)[]) => void;
 }
 
 export default function ProductFormModal({
   formData,
   setFormData,
   editingId,
+  imageFiles,
   submitting,
   onSubmit,
   onClose,
@@ -70,6 +72,7 @@ export default function ProductFormModal({
             formData={formData}
             setFormData={setFormData}
             editingId={editingId}
+            imageFiles={imageFiles}
             onImageChange={onImageChange}
           />
           <div className="flex gap-3 pt-2">

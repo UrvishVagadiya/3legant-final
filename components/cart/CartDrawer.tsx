@@ -48,7 +48,7 @@ export default function CartDrawer() {
               key={`${item.id}-${item.color}`}
               className="flex gap-4 border-b border-[#E8ECEF] pb-6 last:border-0 last:pb-0"
             >
-              <div 
+              <div
                 className="relative w-20 h-24 bg-[#F3F5F7] rounded overflow-hidden shrink-0"
                 style={{ backgroundColor: (item.color?.toLowerCase() !== 'white' && colorMap[item.color as string]) ? colorMap[item.color as string] : undefined }}
               >

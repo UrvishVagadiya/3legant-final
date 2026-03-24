@@ -8,8 +8,8 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 async function testStockReduction() {
     const productId = 'eae45650-0519-4b03-bb61-23e2788cd6ed'; // toaster
     console.log('Testing stock reduction for for:', productId);
-    
-    // Check initial stock
+
+
     const { data: initialData } = await supabase.from('products').select('stock').eq('id', productId).single();
     console.log('Initial stock:', initialData.stock);
 

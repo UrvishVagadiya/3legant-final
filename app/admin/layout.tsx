@@ -13,6 +13,7 @@ import {
   LogOut,
   Menu,
   X,
+  Mail,
 } from "lucide-react";
 
 const navItems = [
@@ -21,6 +22,7 @@ const navItems = [
   { href: "/admin/orders", label: "Orders", icon: ShoppingCart },
   { href: "/admin/payments", label: "Payments", icon: CreditCard },
   { href: "/admin/coupons", label: "Coupons", icon: Ticket },
+  { href: "/admin/messages", label: "Messages", icon: Mail },
 ];
 
 import { useAuth } from "@/context/AuthContext";

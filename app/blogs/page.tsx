@@ -1,12 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { BsGrid3X3GapFill, BsGridFill } from "react-icons/bs";
 import { PiColumnsFill, PiRowsFill } from "react-icons/pi";
-import { blogsData } from "@/constants/blogsData";
 import GridIconBar from "@/components/shop/GridIconBar";
 import BlogSortMenu from "@/components/sections/BlogSortMenu";
+import { createClient } from "@/utils/supabase/client";
+
+interface Blog {
+  id: number;
+  title: string;
+  img: string;
+  date: string;
+  timestamp: number;
+  description: string;
+}
 
 const desktopIcons = [
   { icon: <BsGrid3X3GapFill />, grid: 3 },
@@ -15,13 +24,39 @@ const desktopIcons = [
   { icon: <PiRowsFill />, grid: 1 },
 ];
 
+const mobileIcons = [
+  { icon: <PiColumnsFill />, grid: 2 },
+  { icon: <PiRowsFill />, grid: 1 },
+];
+
 const Blogs = () => {
+  const [blogs, setBlogs] = useState<Blog[]>([]);
+  const [loading, setLoading] = useState(true);
   const [viewGrid, setViewGrid] = useState<number>(3);
+  const [mobileViewGrid, setMobileViewGrid] = useState<number>(1);
   const [sortOption, setSortOption] = useState("default");
   const [visibleCount, setVisibleCount] = useState<number>(9);
+  const supabase = createClient();
+
+  useEffect(() => {
+    const fetchBlogs = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("blogs")
+        .select("*")
+        .order("timestamp", { ascending: false });
+
+      if (data && !error) {
+        setBlogs(data);
+      }
+      setLoading(false);
+    };
+
+    fetchBlogs();
+  }, []);
 
   const sortedArticles = useMemo(() => {
-    let result = [...blogsData];
+    let result = [...blogs];
     if (sortOption === "az")
       result.sort((a, b) => a.title.localeCompare(b.title));
     else if (sortOption === "za")
@@ -31,7 +66,7 @@ const Blogs = () => {
     else if (sortOption === "oldest")
       result.sort((a, b) => a.timestamp - b.timestamp);
     return result;
-  }, [sortOption]);
+  }, [sortOption, blogs]);
 
   const gridClass =
     viewGrid === 1
@@ -41,6 +76,8 @@ const Blogs = () => {
         : viewGrid === 3
           ? "md:grid-cols-4"
           : "md:grid-cols-3";
+
+  const mobileGridClass = mobileViewGrid === 1 ? "grid-cols-1" : "grid-cols-2";
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20 space-y-8 md:space-y-12">
@@ -83,8 +120,15 @@ const Blogs = () => {
             Featured
           </h1>
         </div>
-        <div className="flex items-center justify-between w-full md:w-auto gap-6">
+        <div className="flex items-center justify-between w-full md:w-auto gap-6 pb-2 md:pb-0">
           <BlogSortMenu sortOption={sortOption} onSort={setSortOption} />
+          <div className="md:hidden">
+            <GridIconBar
+              icons={mobileIcons}
+              activeGrid={mobileViewGrid}
+              onChange={setMobileViewGrid}
+            />
+          </div>
           <div className="hidden md:flex items-center">
             <GridIconBar
               icons={desktopIcons}
@@ -96,41 +140,46 @@ const Blogs = () => {
       </div>
 
       <div
-        className={`grid gap-6 md:gap-8 transition-all duration-300 w-full grid-cols-1 ${gridClass}`}
+        className={`grid gap-x-4 gap-y-8 md:gap-8 transition-all duration-300 w-full ${mobileGridClass} ${gridClass}`}
       >
-        {sortedArticles.slice(0, visibleCount).map((article) => (
-          <Link
-            href={`/blogs/${article.id}`}
-            key={article.id}
-            className={`flex flex-col group ${viewGrid === 1 ? "md:flex-row md:items-center md:gap-8" : ""}`}
-          >
-            <div
-              className={`overflow-hidden rounded-sm bg-[#F3F5F7] ${viewGrid === 1 ? "w-full md:w-1/3 shrink-0" : "w-full"}`}
+        {loading ? (
+          <div className="col-span-full py-20 flex justify-center">
+            <div className="w-10 h-10 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : (
+          sortedArticles.slice(0, visibleCount).map((article) => (
+            <Link
+              href={`/blogs/${article.id}`}
+              key={article.id}
+              className={`flex flex-col group ${viewGrid === 1 ? "md:flex-row md:items-center md:gap-8" : ""}`}
             >
-              <img
-                className={`w-full object-cover object-center transition-transform duration-500 group-hover:scale-105 ${viewGrid === 1 ? "aspect-4/3" : "aspect-square"}`}
-                src={article.img}
-                alt={article.title}
-              />
-            </div>
-            <div className={`mt-4 ${viewGrid === 1 ? "md:mt-0 flex-1" : ""}`}>
-              <h3
-                className={`font-medium text-[#141718] mb-2 leading-relaxed ${viewGrid === 1 ? "text-xl md:text-2xl font-semibold" : "text-base md:text-lg"}`}
+              <div
+                className={`overflow-hidden rounded-sm bg-[#F3F5F7] ${viewGrid === 1 ? "w-full md:w-1/3 shrink-0" : "w-full"} ${mobileViewGrid === 2 ? "aspect-square" : ""}`}
               >
-                {article.title}
-              </h3>
-              <p className="text-[12px] md:text-sm text-[#6C7275] font-medium">
-                {article.date}
-              </p>
-              {viewGrid === 1 && (
-                <p className="hidden md:block mt-4 text-[#6C7275] line-clamp-3 leading-relaxed">
-                  Discover the secrets to making your home look stunning and
-                  professionally designed without breaking the bank.
+                <img
+                  className={`w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-105 ${viewGrid === 1 ? "md:aspect-4/3" : "aspect-square"} ${mobileViewGrid === 1 ? "aspect-video md:aspect-square" : "aspect-square"}`}
+                  src={article.img}
+                  alt={article.title}
+                />
+              </div>
+              <div className={`mt-4 ${viewGrid === 1 ? "md:mt-0 flex-1" : ""}`}>
+                <h3
+                  className={`font-medium text-[#141718] mb-2 leading-relaxed ${viewGrid === 1 ? "text-xl md:text-2xl font-semibold" : "text-base md:text-lg"} ${mobileViewGrid === 2 ? "text-sm md:text-base line-clamp-2" : "text-base"}`}
+                >
+                  {article.title}
+                </h3>
+                <p className="text-[12px] md:text-sm text-[#6C7275] font-medium">
+                  {article.date}
                 </p>
-              )}
-            </div>
-          </Link>
-        ))}
+                {viewGrid === 1 && (
+                  <p className="hidden md:block mt-4 text-[#6C7275] line-clamp-3 leading-relaxed">
+                    {article.description || "Discover the secrets to making your home look stunning and professionally designed without breaking the bank."}
+                  </p>
+                )}
+              </div>
+            </Link>
+          ))
+        )}
       </div>
 
       {sortedArticles.length > visibleCount && (

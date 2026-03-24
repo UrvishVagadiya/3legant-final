@@ -6,14 +6,14 @@ type Props = ImageProps & {
 
 export default function TintedProductImage({ colorHex, ...imageProps }: Props) {
   return (
-    <div className="relative w-full h-full overflow-hidden">
+    <div className="relative w-full h-full">
       <Image {...imageProps} />
       {colorHex && (
         <div
           className="absolute inset-0 pointer-events-none transition-colors duration-300"
           style={{
             backgroundColor: colorHex,
-            opacity: 0.05,
+            opacity: 0.5,
             mixBlendMode: "color",
           }}
           aria-hidden="true"

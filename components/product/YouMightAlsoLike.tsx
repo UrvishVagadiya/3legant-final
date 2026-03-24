@@ -1,42 +1,37 @@
 "use client";
-import { useEffect, useState, useMemo } from "react";
-import { createClient } from "../../utils/supabase/client";
+import { useEffect, useMemo } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { useIsMounted } from "@/hooks/useIsMounted";
 import { useProductActions } from "@/hooks/useProductActions";
 import { useProductRatings } from "@/hooks/useProductRatings";
 import ProductCard from "@/components/ui/ProductCard";
+import { Product, useProductStore } from "@/store/productStore";
 
 export default function YouMightAlsoLike() {
-  const [products, setProducts] = useState<any[]>([]);
-  const supabase = createClient();
-
-  const { handleWishlistToggle, handleAddToCart, wishlistItems, isInWishlist } =
+  const { products: allProducts, fetchProducts } = useProductStore();
+  const { wishlistItems } = useProductStore() as any;
+  const { handleWishlistToggle, handleAddToCart } =
     useProductActions();
   const isMounted = useIsMounted();
 
-  useEffect(() => {
-    async function fetchProducts() {
-      const { data } = await supabase
-        .from("products")
-        .select("*")
-        .eq("status", "active")
-        .limit(6);
-      if (data) {
-        setProducts(data);
-      }
-    }
-    fetchProducts();
-  }, []); // Remove supabase from dependency
+  const products = useMemo(() => {
+    if (allProducts.length === 0) return [];
+    const shuffled = [...allProducts].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, 6) as Product[];
+  }, [allProducts]);
 
-  const displayProducts = useMemo(() => 
-    products.length > 0 ? products : [], 
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+
+  const displayProducts = useMemo(() =>
+    products.length > 0 ? products : [],
     [products]
   );
 
   const productIds = useMemo(
-    () => displayProducts.map((p: any) => p.id),
+    () => displayProducts.map((p: Product) => p.id),
     [displayProducts],
   );
   const { getRating } = useProductRatings(productIds);
@@ -57,12 +52,12 @@ export default function YouMightAlsoLike() {
       </div>
 
       <div className="flex overflow-x-auto gap-4 md:gap-6 pb-4">
-        {displayProducts.map((card) => (
+        {displayProducts.map((card: Product) => (
           <div key={card.id} className="w-62.5 md:w-70 shrink-0">
             <ProductCard
               product={card}
               isMounted={isMounted}
-              isWishlisted={wishlistItems.some((i) => i.id == card.id)}
+              isWishlisted={wishlistItems?.some((i: any) => i.id == card.id)}
               onWishlistToggle={(e) => handleWishlistToggle(e, card)}
               onAddToCart={(e) => handleAddToCart(e, card)}
               linkTo={`/product/${card.id}`}

@@ -2,7 +2,7 @@
 
 import { Plus } from "lucide-react";
 import AddressModal from "./AddressModal";
-import AddressCard from "./AddressCard";
+import AddressCard, { DbAddress } from "./AddressCard";
 import { useAddresses } from "@/hooks/useAddresses";
 
 interface AddressProps {
@@ -20,11 +20,11 @@ const AddressSection = ({
 }: {
   title: string;
   type: "shipping" | "billing";
-  addresses: any[];
+  addresses: DbAddress[];
   onAdd: (type: "shipping" | "billing") => void;
-  onEdit: (address: any) => void;
+  onEdit: (address: DbAddress) => void;
   onDelete: (id: string) => void;
-  onSetDefault: (address: any) => void;
+  onSetDefault: (address: DbAddress) => void;
 }) => (
   <div className={type === "shipping" ? "mb-8" : ""}>
     <div className="flex justify-between items-center mb-4">

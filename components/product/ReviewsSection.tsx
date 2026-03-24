@@ -1,403 +1,211 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
+import { create } from "zustand";
 import { createClient } from "@/utils/supabase/client";
 import toast from "react-hot-toast";
-import { Stars, ReviewForm, ReviewCard } from "./ReviewParts";
+import { IoMdStar, IoMdStarOutline } from "react-icons/io";
+import { X, Edit2, Trash2 } from "lucide-react";
+import { AiOutlineHeart, AiFillHeart } from "react-icons/ai";
+import { BsReply } from "react-icons/bs";
 import { useAuth } from "@/context/AuthContext";
 
-interface ReviewLikes {
-  [reviewId: string]: { count: number; liked: boolean };
+import { useReviewStore } from "@/store/reviewStore";
+
+const supabase = createClient();
+
+export const Stars = ({ count, size = "text-[14px]" }: { count: number; size?: string }) => (
+  <div className={`flex text-[#141718] ${size}`}>
+    {[...Array(5)].map((_, i) =>
+      i < Math.round(count) ? <IoMdStar key={i} /> : <IoMdStarOutline key={i} />
+    )}
+  </div>
+);
+
+export function ReviewForm({ rating, setRating, text, setText, submitting, onSubmit, onClose, isEditing = false }: any) {
+  return (
+    <div className="border border-[#E8ECEF] rounded-lg p-5 flex flex-col gap-4">
+      <div className="flex justify-between items-center">
+        <h4 className="text-[16px] font-medium">{isEditing ? "Edit Your Review" : "Write a Review"}</h4>
+        <button onClick={onClose} className="text-[#6C7275] hover:text-black focus:outline-none"><X className="w-5 h-5" /></button>
+      </div>
+      <div className="flex flex-col gap-2">
+        <span className="text-[14px] text-[#6C7275]">Rating</span>
+        <div className="flex gap-1">
+          {[1, 2, 3, 4, 5].map(s => (
+            <button key={s} onClick={() => setRating(s)} className="text-[24px] focus:outline-none">
+              {s <= rating ? <IoMdStar className="text-[#141718]" /> : <IoMdStarOutline className="text-[#6C7275]" />}
+            </button>
+          ))}
+        </div>
+      </div>
+      <textarea
+        value={text} onChange={e => setText(e.target.value)}
+        placeholder="Share your experience..." rows={4}
+        className="border border-[#E8ECEF] rounded-lg px-4 py-3 text-[14px] outline-none focus:border-black resize-none"
+      />
+      <button
+        onClick={onSubmit} disabled={submitting || !text.trim()}
+        className="self-end bg-black text-white px-6 py-2.5 rounded-lg text-[14px] font-medium hover:opacity-90 disabled:opacity-50 transition"
+      >
+        {submitting ? "Processing..." : isEditing ? "Update Review" : "Submit Review"}
+      </button>
+    </div>
+  );
 }
 
-interface ReviewReply {
-  id: string;
-  review_id: string;
-  user_id: string;
-  user_name: string;
-  reply: string;
-  created_at: string;
+export function ReviewCard({ review, currentUserId, onToggleLike, onEdit, onDelete, onSubmitReply }: any) {
+  const [showReplyForm, setShowReplyForm] = useState(false);
+  const [replyText, setReplyText] = useState("");
+  const isOwner = currentUserId === review.user_id;
+
+  const handleReplySubmit = () => {
+    if (!replyText.trim()) return;
+    onSubmitReply(replyText);
+    setReplyText("");
+    setShowReplyForm(false);
+  };
+
+  return (
+    <div className="flex flex-col gap-4 border-b border-[#E8ECEF] pb-6 last:border-0 transition-opacity">
+      <div className="flex items-center gap-4">
+        <div className="w-10 h-10 rounded-full bg-[#F3F5F7] flex items-center justify-center font-semibold">{review.user_name?.charAt(0).toUpperCase()}</div>
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="font-medium">{review.user_name}</span>
+            {isOwner && <span className="text-[10px] bg-black text-white px-2 py-0.5 rounded-full">You</span>}
+          </div>
+          <Stars count={review.rating} size="text-[12px]" />
+        </div>
+        <span className="ml-auto text-xs text-[#6C7275]">{new Date(review.created_at).toLocaleDateString()}</span>
+      </div>
+      <p className="text-[#6C7275] text-sm leading-relaxed">{review.review}</p>
+      <div className="flex items-center gap-6">
+        <button onClick={onToggleLike} className="flex items-center gap-1.5 text-xs text-[#6C7275] hover:text-black focus:outline-none">
+          {review.liked ? <AiFillHeart className="text-red-500" /> : <AiOutlineHeart />}
+          <span>{review.likes_count > 0 ? review.likes_count : "Like"}</span>
+        </button>
+        <button onClick={() => setShowReplyForm(!showReplyForm)} className="flex items-center gap-1.5 text-xs text-[#6C7275] hover:text-black focus:outline-none">
+          <BsReply /> <span>Reply {review.replies?.length > 0 ? `(${review.replies.length})` : ""}</span>
+        </button>
+        {isOwner && (
+          <div className="flex items-center gap-4 ml-auto">
+            <button onClick={onEdit} className="flex items-center gap-1 text-xs text-[#6C7275] hover:text-black focus:outline-none"><Edit2 className="w-3 h-3" /> Edit</button>
+            <button onClick={onDelete} className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 focus:outline-none"><Trash2 className="w-3 h-3" /> Delete</button>
+          </div>
+        )}
+      </div>
+      {review.replies?.length > 0 && (
+        <div className="ml-10 flex flex-col gap-3 border-l-2 border-[#F3F5F7] pl-4 mt-2">
+          {review.replies.map((r: any) => (
+            <div key={r.id}>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="font-semibold">{r.user_name}</span>
+                <span className="text-[#6C7275]">{new Date(r.created_at).toLocaleDateString()}</span>
+              </div>
+              <p className="text-[#6C7275] text-xs mt-1">{r.reply}</p>
+            </div>
+          ))}
+        </div>
+      )}
+      {showReplyForm && (
+        <div className="ml-10 flex gap-2 mt-2 animasi-fade-in">
+          <input
+            className="flex-1 border rounded-lg px-3 py-2 text-xs outline-none focus:border-black"
+            placeholder="Write a reply..." value={replyText} onChange={e => setReplyText(e.target.value)}
+          />
+          <button onClick={handleReplySubmit} className="bg-black text-white px-4 py-2 rounded-lg text-xs hover:opacity-90">Post</button>
+        </div>
+      )}
+    </div>
+  );
 }
 
-interface ReviewReplies {
-  [reviewId: string]: ReviewReply[];
-}
+export default function ReviewsSection({ productId, productName }: { productId: string; productName: string }) {
+  const { user } = useAuth();
+  const { 
+    reviewsByProduct, 
+    fetchReviews, 
+    addReview, 
+    updateReview, 
+    deleteReview, 
+    toggleLike, 
+    addReply, 
+    loading 
+  } = useReviewStore();
+  
+  const reviews = reviewsByProduct[productId] || [];
+  const userReview = reviews.find((r: any) => r.user_id === user?.id) || null;
 
-export function useProductReviews(productId: string | undefined) {
-  const { user, session: authSession } = useAuth();
-  const [reviews, setReviews] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [text, setText] = useState("");
   const [rating, setRating] = useState(5);
-  const [submitting, setSubmitting] = useState(false);
   const [sortOption, setSortOption] = useState("Newest");
-  const [isEditing, setIsEditing] = useState(false);
-  const [userReview, setUserReview] = useState<any>(null);
-  const [likes, setLikes] = useState<ReviewLikes>({});
-  const [replies, setReplies] = useState<ReviewReplies>({});
-  const supabase = createClient();
 
   useEffect(() => {
-    if (!productId) return;
-    (async () => {
-      const { data: reviewsData } = await supabase
-        .from("product_reviews")
-        .select("*")
-        .eq("product_id", productId)
-        .order("created_at", { ascending: false });
+    fetchReviews(productId, user?.id);
+  }, [productId, user?.id, fetchReviews]);
 
-      const allReviews = reviewsData || [];
-      const reviewIds = allReviews.map((r: any) => r.id);
-
-      // Fetch likes and replies in parallel
-      const [userLikesResult, repliesResult] = await Promise.all([
-        user?.id
-          ? supabase
-            .from("review_likes")
-            .select("review_id")
-            .eq("user_id", user.id)
-            .in("review_id", reviewIds)
-          : Promise.resolve({ data: null }),
-        supabase
-          .from("review_replies")
-          .select("*")
-          .in("review_id", reviewIds)
-          .order("created_at", { ascending: true })
-      ]);
-
-      const userLikesData = userLikesResult.data;
-      const repliesData = repliesResult.data;
-
-      // Prepare states
-      const likesMap: ReviewLikes = {};
-      allReviews.forEach((r: any) => {
-        likesMap[r.id] = {
-          count: r.likes_count || 0,
-          liked: userLikesData?.some((l: any) => l.review_id === r.id) || false,
-        };
-      });
-
-      const repliesMap: ReviewReplies = {};
-      reviewIds.forEach((id: string) => {
-        repliesMap[id] = [];
-      });
-      if (repliesData) {
-        repliesData.forEach((reply: ReviewReply) => {
-          if (repliesMap[reply.review_id]) {
-            repliesMap[reply.review_id].push(reply);
-          }
-        });
-      }
-
-      // Batch state updates
-      setReviews(allReviews);
-      if (user?.id) {
-        const existing = allReviews.find((r: any) => r.user_id === user.id);
-        if (existing) setUserReview(existing);
-      }
-      setLikes(likesMap);
-      setReplies(repliesMap);
-    })();
-  }, [productId, user?.id]);
-
-  const hasUserReview = !!userReview;
-
-  const startEdit = useCallback(() => {
+  const handleEdit = () => {
     if (!userReview) return;
     setText(userReview.review);
     setRating(userReview.rating);
     setIsEditing(true);
     setShowForm(true);
-  }, [userReview]);
-
-  const submit = async () => {
-    if (!text.trim()) return;
-    if (!user) {
-      toast("Please sign in to write a review", {
-        icon: "🔒",
-        style: { borderRadius: "8px", background: "#141718", color: "#fff" },
-      });
-      return;
-    }
-    setSubmitting(true);
-    const userName =
-      user.user_metadata?.full_name ||
-      user.email?.split("@")[0] ||
-      "Anonymous";
-
-    if (isEditing && userReview) {
-      const { data, error } = await supabase
-        .from("product_reviews")
-        .update({ rating, review: text.trim() })
-        .eq("id", userReview.id)
-        .select()
-        .maybeSingle();
-      if (!error) {
-        const updated = data || { ...userReview, rating, review: text.trim() };
-        setReviews((prev) =>
-          prev.map((r) => (r.id === userReview.id ? updated : r))
-        );
-        setUserReview(updated);
-        setText("");
-        setRating(5);
-        setShowForm(false);
-        setIsEditing(false);
-        toast.success("Review updated!");
-      } else {
-        toast.error(error?.message || "Failed to update review");
-      }
-    } else {
-      const { data, error } = await supabase
-        .from("product_reviews")
-        .insert({
-          product_id: productId,
-          user_id: user.id,
-          user_name: userName,
-          rating,
-          review: text.trim(),
-        })
-        .select()
-        .maybeSingle();
-      if (!error) {
-        const newReview = data || {
-          id: crypto.randomUUID(),
-          product_id: productId,
-          user_id: user.id,
-          user_name: userName,
-          rating,
-          review: text.trim(),
-          created_at: new Date().toISOString(),
-        };
-        setReviews((prev) => [newReview, ...prev]);
-        setUserReview(newReview);
-        setText("");
-        setRating(5);
-        setShowForm(false);
-        toast.success("Review submitted!");
-      } else {
-        toast.error(error?.message || "Failed to submit review");
-      }
-    }
-    setSubmitting(false);
   };
 
-  const toggleLike = async (reviewId: string) => {
-    if (!user) {
-      toast("Please sign in to like a review", {
-        icon: "🔒",
-        style: { borderRadius: "8px", background: "#141718", color: "#fff" },
-      });
-      return;
-    }
-
-    const current = likes[reviewId] || { count: 0, liked: false };
-    console.log("Toggle like for review:", reviewId, "Current liked state:", current.liked, "User ID:", user.id);
-
-    if (current.liked) {
-      const { error } = await supabase
-        .from("review_likes")
-        .delete()
-        .eq("review_id", reviewId)
-        .eq("user_id", user.id);
-
-      if (error) {
-        console.error("Error unliking review:", error);
-        toast.error("Failed to unlike review");
-        return;
-      }
-
-      setLikes((prev) => ({
-        ...prev,
-        [reviewId]: { count: Math.max(0, current.count - 1), liked: false },
-      }));
-
-      // Optimistically update reviews list if needed or just rely on the likes state
-      setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, likes_count: Math.max(0, (r.likes_count || 0) - 1) } : r));
-    } else {
-      const { error } = await supabase.from("review_likes").insert({
-        review_id: reviewId,
-        user_id: user.id,
-      });
-
-      if (error) {
-        console.error("Error liking review:", error);
-        toast.error("Failed to like review");
-        return;
-      }
-
-      setLikes((prev) => ({
-        ...prev,
-        [reviewId]: { count: current.count + 1, liked: true },
-      }));
-
-      setReviews(prev => prev.map(r => r.id === reviewId ? { ...r, likes_count: (r.likes_count || 0) + 1 } : r));
-    }
-  };
-
-  const submitReply = async (reviewId: string, replyText: string) => {
-    if (!replyText.trim()) return;
-    if (!user) {
-      toast("Please sign in to reply", {
-        icon: "🔒",
-        style: { borderRadius: "8px", background: "#141718", color: "#fff" },
-      });
-      return;
-    }
-
-    const userName =
-      user.user_metadata?.full_name ||
-      user.email?.split("@")[0] ||
-      "Anonymous";
-
-    const { data, error } = await supabase
-      .from("review_replies")
-      .insert({
-        review_id: reviewId,
-        user_id: user.id,
-        user_name: userName,
-        reply: replyText.trim(),
-      })
-      .select()
-      .single();
-
-    if (!error && data) {
-      setReplies((prev) => ({
-        ...prev,
-        [reviewId]: [...(prev[reviewId] || []), data],
-      }));
-      toast.success("Reply posted!");
-    } else {
-      toast.error(error?.message || "Failed to post reply");
-    }
-  };
-
-  const deleteReview = async (reviewId: string) => {
-    if (!user) return;
-    if (!window.confirm("Are you sure you want to delete your review?")) return;
-
-    const { error } = await supabase
-      .from("product_reviews")
-      .delete()
-      .eq("id", reviewId)
-      .eq("user_id", user.id);
-
-    if (!error) {
-      setReviews((prev) => prev.filter((r) => r.id !== reviewId));
-      if (userReview?.id === reviewId) {
-        setUserReview(null);
-        setText("");
-        setRating(5);
-        setIsEditing(false);
-        setShowForm(false);
-      }
-      toast.success("Review deleted");
-    } else {
-      toast.error(error.message || "Failed to delete review");
-    }
-  };
-
-  const sorted = [...reviews].sort((a, b) => {
+  const sortedReviews = [...reviews].sort((a, b) => {
     if (sortOption === "Highest Rating") return b.rating - a.rating;
     if (sortOption === "Lowest Rating") return a.rating - b.rating;
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 
-  const avg =
-    reviews.length > 0
-      ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
-      : 0;
+  const avgRating = reviews.length > 0 
+    ? reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length 
+    : 0;
 
-  return {
-    reviews,
-    sorted,
-    avg,
-    showForm,
-    setShowForm,
-    text,
-    setText,
-    rating,
-    setRating,
-    submitting,
-    submit,
-    sortOption,
-    setSortOption,
-    isEditing,
-    setIsEditing,
-    userReview,
-    hasUserReview,
-    startEdit,
-    currentUserId: user?.id || null,
-    likes,
-    toggleLike,
-    replies,
-    submitReply,
-    deleteReview,
-  };
-}
-
-interface Props {
-  productName: string;
-  r: ReturnType<typeof useProductReviews>;
-}
-
-export default function ReviewsSection({ productName, r }: Props) {
   return (
-    <div className="flex flex-col gap-6 mt-4">
+    <div className="flex flex-col gap-8 mt-10">
       <div className="flex flex-col gap-4">
-        <h3 className="text-[20px] md:text-[24px] font-medium font-poppins text-[#141718]">
-          Customer Reviews
-        </h3>
+        <h3 className="text-2xl font-medium">Customer Reviews</h3>
         <div className="flex items-center gap-2">
-          <Stars count={r.avg} />
-          <span className="text-[#141718] text-xs">
-            {r.reviews.length} Reviews
-          </span>
+          <Stars count={avgRating} />
+          <span className="text-sm text-[#6C7275]">{reviews.length} Reviews</span>
         </div>
-        <div className="w-full flex justify-between items-center border border-[#E8ECEF] rounded-[80px] px-4 py-2 mt-2">
-          <span className="text-[#6C7275] text-[14px]">{productName}</span>
-          {r.hasUserReview ? (
-            <button
-              onClick={r.startEdit}
-              className="bg-[#141718] text-white text-[14px] px-4 py-2 rounded-[80px] font-medium tracking-tight hover:bg-black transition-colors"
-            >
-              Edit Review
-            </button>
-          ) : (
-            <button
-              onClick={() => r.setShowForm(true)}
-              className="bg-[#141718] text-white text-[14px] px-4 py-2 rounded-[80px] font-medium tracking-tight hover:bg-black transition-colors"
-            >
-              Write Review
-            </button>
-          )}
+        <div className="flex justify-between items-center border rounded-full px-6 py-3 mt-4">
+          <span className="text-sm text-[#6C7275]">{productName}</span>
+          <button 
+            onClick={userReview ? handleEdit : () => setShowForm(true)}
+            className="bg-black text-white px-6 py-2 rounded-full text-sm font-medium hover:opacity-90 transition"
+          >
+            {userReview ? "Edit Review" : "Write Review"}
+          </button>
         </div>
       </div>
 
-      {r.showForm && (
+      {showForm && (
         <ReviewForm
-          rating={r.rating}
-          setRating={r.setRating}
-          text={r.text}
-          setText={r.setText}
-          submitting={r.submitting}
-          onSubmit={r.submit}
-          onClose={() => {
-            r.setShowForm(false);
-            r.setIsEditing(false);
-            r.setText("");
-            r.setRating(5);
+          rating={rating} setRating={setRating} text={text} setText={setText}
+          submitting={loading} isEditing={isEditing}
+          onClose={() => setShowForm(false)}
+          onSubmit={async () => {
+            if (!user) return toast.error("Please sign in");
+            if (isEditing && userReview) {
+              await updateReview(productId, userReview.id, rating, text);
+            } else {
+              const name = user.user_metadata?.full_name || user.email?.split("@")[0] || "Anonymous";
+              await addReview(productId, user.id, name, rating, text);
+            }
+            setShowForm(false); setIsEditing(false); setText(""); setRating(5);
           }}
-          isEditing={r.isEditing}
         />
       )}
 
-      <div className="flex justify-between items-center border-b border-[#E8ECEF] pb-4 mt-2">
-        <h4 className="text-[20px] font-medium font-poppins text-[#141718]">
-          {r.reviews.length} Reviews
-        </h4>
-        <select
-          value={r.sortOption}
-          onChange={(e) => r.setSortOption(e.target.value)}
-          className="border border-[#E8ECEF] bg-white rounded text-[#141718] text-[14px] px-3 py-2 outline-none"
+      <div className="flex justify-between items-center border-b pb-4 mt-4">
+        <h4 className="text-lg font-medium">{reviews.length} Reviews</h4>
+        <select 
+          value={sortOption} onChange={e => setSortOption(e.target.value)}
+          className="bg-transparent border rounded p-2 text-sm outline-none"
         >
           <option>Newest</option>
           <option>Highest Rating</option>
@@ -405,27 +213,20 @@ export default function ReviewsSection({ productName, r }: Props) {
         </select>
       </div>
 
-      {r.reviews.length === 0 ? (
-        <p className="text-[#6C7275] text-[14px]">
-          No reviews yet. Be the first to review!
-        </p>
-      ) : (
-        <div className="flex flex-col gap-4 max-h-100 overflow-y-auto">
-          {r.sorted.map((review) => (
+      <div className="flex flex-col gap-6">
+        {sortedReviews.length === 0 ? (
+          <p className="text-[#6C7275] text-center py-10">No reviews yet. Be the first to share your thoughts!</p>
+        ) : (
+          sortedReviews.map(review => (
             <ReviewCard
-              key={review.id}
-              review={review}
-              likes={r.likes[review.id] || { count: 0, liked: false }}
-              onToggleLike={() => r.toggleLike(review.id)}
-              replies={r.replies[review.id] || []}
-              onSubmitReply={(text) => r.submitReply(review.id, text)}
-              isOwner={r.currentUserId === review.user_id}
-              onEdit={r.startEdit}
-              onDelete={() => r.deleteReview(review.id)}
+              key={review.id} review={review} currentUserId={user?.id}
+              onToggleLike={() => user ? toggleLike(productId, review.id, user.id) : toast.error("Please sign in")}
+              onEdit={handleEdit} onDelete={() => deleteReview(productId, review.id, user!.id)}
+              onSubmitReply={(reply: string) => user ? addReply(productId, review.id, user.id, user.user_metadata?.full_name || "Anonymous", reply) : toast.error("Please sign in")}
             />
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
     </div>
   );
 }

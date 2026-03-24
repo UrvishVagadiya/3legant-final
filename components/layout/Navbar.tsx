@@ -48,42 +48,37 @@ const Navbar = () => {
       <div className="hidden md:flex items-center gap-6 lg:gap-10 text-sm font-medium text-[#6C7275]">
         <Link
           href={"/"}
-          className={`${
-            pathname === "/" ? "text-[#141718] font-bold" : "text-[#6C7275] hover:text-[#141718]"
-          } transition-colors duration-300 ease-in-out`}
+          className={`${pathname === "/" ? "text-[#141718] font-bold" : "text-[#6C7275] hover:text-[#141718]"
+            } transition-colors duration-300 ease-in-out`}
         >
           Home
         </Link>
         <Link
           href={"/shop"}
-          className={`${
-            pathname.startsWith("/shop") ? "text-[#141718] font-bold" : "text-[#6C7275] hover:text-[#141718]"
-          } transition-colors duration-300 ease-in-out`}
+          className={`${pathname.startsWith("/shop") ? "text-[#141718] font-bold" : "text-[#6C7275] hover:text-[#141718]"
+            } transition-colors duration-300 ease-in-out`}
         >
           Shop
         </Link>
         <Link
           href={"/blogs"}
-          className={`${
-            pathname.startsWith("/blogs") ? "text-[#141718] font-bold" : "text-[#6C7275] hover:text-[#141718]"
-          } transition-colors duration-300 ease-in-out`}
+          className={`${pathname.startsWith("/blogs") ? "text-[#141718] font-bold" : "text-[#6C7275] hover:text-[#141718]"
+            } transition-colors duration-300 ease-in-out`}
         >
           Blog
         </Link>
         <Link
           href={"/contact"}
-          className={`${
-            pathname.startsWith("/contact") ? "text-[#141718] font-bold" : "text-[#6C7275] hover:text-[#141718]"
-          } transition-colors duration-300 ease-in-out`}
+          className={`${pathname.startsWith("/contact") ? "text-[#141718] font-bold" : "text-[#6C7275] hover:text-[#141718]"
+            } transition-colors duration-300 ease-in-out`}
         >
           Contact Us
         </Link>
         {role === "admin" && (
           <Link
             href={"/admin"}
-            className={`${
-              pathname.startsWith("/admin") ? "text-[#141718] font-bold" : "text-[#6C7275] hover:text-[#141718]"
-            } transition-colors duration-300 ease-in-out`}
+            className={`${pathname.startsWith("/admin") ? "text-[#141718] font-bold" : "text-[#6C7275] hover:text-[#141718]"
+              } transition-colors duration-300 ease-in-out`}
           >
             Admin
           </Link>

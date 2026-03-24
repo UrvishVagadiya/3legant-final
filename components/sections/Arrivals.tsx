@@ -1,27 +1,18 @@
 "use client";
-import ButtonText from "../ui/ButtonText";
 import { useEffect, useRef, useState, useMemo } from "react";
-import { createClient } from "@/utils/supabase/client";
+import ButtonText from "../ui/ButtonText";
+import { Product, useProductStore } from "@/store/productStore";
 import { useIsMounted } from "@/hooks/useIsMounted";
 import { useProductActions } from "@/hooks/useProductActions";
 import { useProductRatings } from "@/hooks/useProductRatings";
 import ArrivalCard from "./ArrivalCard";
 
-interface Product {
-  id: number;
-  img: string;
-  title: string;
-  price: number;
-  mrp?: number;
-  category?: string;
-  valid_until?: string | number | null;
-  stock?: number;
-}
+// Using Product interface from store instead of local one to avoid conflicts
 
 const Arrivals = () => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const supabase = createClient();
+  const { products: allProducts, loading, fetchProducts } = useProductStore();
+  const products = useMemo(() => allProducts.slice(0, 10), [allProducts]);
+  const supabase = null; // Removed supabase client as it's not needed for fetching here
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
 
@@ -32,20 +23,8 @@ const Arrivals = () => {
   const { getRating } = useProductRatings(productIds);
 
   useEffect(() => {
-    supabase
-      .from("products")
-      .select("*")
-      .eq("status", "active")
-      .order("id", { ascending: false })
-      .limit(10)
-      .then(({ data, error }: { data: any[] | null; error: any }) => {
-        if (error) {
-          console.error("Error fetching arrivals:", error);
-        }
-        if (data) setProducts(data);
-        setLoading(false);
-      });
-  }, [supabase]);
+    fetchProducts();
+  }, [fetchProducts]);
 
   const handleScroll = () => {
     const el = scrollRef.current;

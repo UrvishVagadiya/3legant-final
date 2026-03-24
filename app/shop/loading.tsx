@@ -7,7 +7,6 @@ export default function ShopLoading() {
     <div className="max-w-310 mx-auto px-4 sm:px-6 lg:px-8 mb-20 font-poppins">
       <BannerSkeleton />
       <div className="flex flex-col lg:flex-row gap-8 my-8 md:my-12 relative w-full items-start">
-        {/* Sidebar Skeleton */}
         <div className="hidden lg:block w-full lg:w-1/4 pb-4">
           <div className="flex flex-col gap-8">
             <div className="flex flex-col gap-4">

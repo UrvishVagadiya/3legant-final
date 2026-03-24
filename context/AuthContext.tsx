@@ -19,8 +19,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  
-  // Use a stable reference for the supabase client
+
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
@@ -33,12 +32,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           .select("role")
           .eq("id", userId)
           .maybeSingle();
-        
+
         if (mounted) {
           if (error) {
             setRole("user");
           } else if (!data && initialUser) {
-            // Not found, insert new profile
             await supabase.from("user_profiles").insert({
               id: initialUser.id,
               email: initialUser.email,
@@ -61,28 +59,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    // Use a single listener for all auth changes including initialization
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
       if (!mounted) return;
-      
+
       const newUser = session?.user ?? null;
       setSession(session);
       setUser(newUser);
-      
+
       if (newUser) {
-        // Optimistically load role from cache
         const cachedRole = localStorage.getItem(`user-role-${newUser.id}`);
         if (cachedRole) {
           setRole(cachedRole);
         }
-        
-        // Fetch/Verify role in background
+
         fetchRole(newUser.id, session?.user ?? null);
       } else {
         setRole(null);
       }
 
-      // Unblock UI immediately after session is resolved
       setLoading(false);
     });
 

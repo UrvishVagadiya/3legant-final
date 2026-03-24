@@ -3,10 +3,8 @@ import { Skeleton } from "@/components/ui/Skeleton";
 export default function HomeLoading() {
   return (
     <div className="w-full space-y-12">
-      {/* Hero ImageSlider Skeleton */}
       <Skeleton className="w-full h-[500px] rounded-none lg:h-[700px]" />
 
-      {/* InfoSection Skeleton */}
       <div className="max-w-[1400px] mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="flex flex-col gap-4">
@@ -17,14 +15,12 @@ export default function HomeLoading() {
         ))}
       </div>
 
-      {/* Cards Skeleton */}
       <div className="max-w-[1400px] mx-auto px-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[1, 2, 3].map((i) => (
           <Skeleton key={i} className="w-full aspect-square" />
         ))}
       </div>
 
-      {/* Arrivals Skeleton */}
       <div className="max-w-[1400px] mx-auto px-4 space-y-8">
         <div className="flex justify-between items-end">
           <Skeleton className="h-10 w-48" />

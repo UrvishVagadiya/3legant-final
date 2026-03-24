@@ -1,11 +1,9 @@
-"use client";
 import { useState, useMemo, useEffect } from "react";
-import { createClient } from "@/utils/supabase/client";
+import { useProductStore } from "@/store/productStore";
 import { categories, priceRanges } from "@/constants/shopFilters";
 
 export function useShopFilters() {
-    const supabase = createClient();
-    const [products, setProducts] = useState<any[]>([]);
+    const { products, fetchProducts } = useProductStore();
     const [selectedCategory, setSelectedCategory] = useState("All Rooms");
     const [selectedPrices, setSelectedPrices] = useState<string[]>(["All Price"]);
     const [sortOption, setSortOption] = useState("default");
@@ -13,17 +11,8 @@ export function useShopFilters() {
     const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
     useEffect(() => {
-        supabase
-            .from("products")
-            .select("*")
-            .eq("status", "active")
-            .then(({ data, error }: { data: any[] | null; error: any }) => {
-                if (error) {
-                    console.error("Error fetching shop products:", error);
-                }
-                if (data) setProducts(data || []);
-            });
-    }, []);
+        fetchProducts();
+    }, [fetchProducts]);
 
     const handlePriceChange = (priceLabel: string) => {
         if (priceLabel === "All Price") {

@@ -5,17 +5,7 @@ import { useProductRatings } from "@/hooks/useProductRatings";
 import { useMemo } from "react";
 import ShopProductCard from "./ShopProductCard";
 
-interface Product {
-  id: number;
-  img: string;
-  title: string;
-  price: number;
-  MRP: number;
-  mrp?: number;
-  category: string;
-  isNew?: boolean;
-  valid_until?: string | number | null;
-}
+import { Product } from "@/store/productStore";
 
 interface ShopProductGridProps {
   products: Product[];
@@ -84,7 +74,7 @@ const ShopProductGrid = ({
       {products.length > visibleCount && (
         <div className="flex justify-center mt-12 mb-8">
           <button
-            onClick={() => setVisibleCount((prev) => prev + 4)}
+            onClick={() => setVisibleCount((prev) => prev + 3)}
             className="px-10 py-2 border border-[#141718] text-[#141718] rounded-[80px] font-medium hover:bg-[#141718] hover:text-white transition-all duration-300"
           >
             Show more

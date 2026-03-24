@@ -7,16 +7,32 @@ import { createClient } from "@/utils/supabase/client";
 import { initialCartItems } from "@/constants/products";
 
 import { ProductDetailsSkeleton } from "@/components/ui/ProductDetailsSkeleton";
+import { useProductStore } from "@/store/productStore";
 
 export default function ProductPage() {
   const { productId } = useParams<{ productId: string }>();
   const router = useRouter();
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const { getProductById } = useProductStore();
   const supabase = createClient();
 
   useEffect(() => {
     const fetchProduct = async () => {
+      // Try to get from store first
+      const cachedProduct = getProductById(productId);
+      if (cachedProduct) {
+        setProduct({
+          ...cachedProduct,
+          name: cachedProduct.title,
+          oldprice: cachedProduct.mrp || cachedProduct.oldprice || 0,
+          validUntil: cachedProduct.validUntil || cachedProduct.valid_until,
+          image_url: cachedProduct.img,
+        });
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       const { data, error } = await supabase
         .from("products")
@@ -59,6 +75,7 @@ export default function ProductPage() {
           image_url: data.img,
           measurements: data.measurements || "",
           weight: data.weight || "",
+          images: data.images || [],
           stock: data.stock ?? 0,
         });
       } else {

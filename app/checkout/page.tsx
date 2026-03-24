@@ -12,7 +12,7 @@ import { useIsMounted } from "@/hooks/useIsMounted";
 import { getShippingCost } from "@/utils/getShippingCost";
 import { useCheckout, validateCheckoutForm } from "@/hooks/useCheckout";
 import { createClient } from "@/utils/supabase/client";
-import { F, billingKeys, initialForm, applyAddr } from "@/utils/checkoutForm";
+import { F, billingKeys, initialForm, applyAddress } from "@/utils/checkoutForm";
 
 import { useAuth } from "@/context/AuthContext";
 
@@ -43,11 +43,9 @@ export default function Checkout() {
       const supabase = createClient();
       const meta = user.user_metadata || {};
 
-      // Try multiple metadata keys for names
-      let fName = meta.first_name || meta.given_name || "";
-      let lName = meta.last_name || meta.family_name || "";
+      let fName = meta.first_name || "";
+      let lName = meta.last_name || "";
 
-      // Also split full names if we are missing any part
       const nameFromMeta = meta.name || meta.full_name || "";
       if (nameFromMeta) {
         const parts = nameFromMeta.split(" ");
@@ -55,7 +53,6 @@ export default function Checkout() {
         if (!lName) lName = parts.slice(1).join(" ") || "";
       }
 
-      // Try user_profiles table as another fallback if still missing
       if (!fName || !lName) {
         const { data: profile } = await supabase
           .from("user_profiles")
@@ -75,7 +72,6 @@ export default function Checkout() {
         email: user.email || p.email,
         firstName: fName || p.firstName,
         lastName: lName || p.lastName,
-        // Also pre-fill billing names for consistency
         billingFirstName: fName || p.billingFirstName,
         billingLastName: lName || p.billingLastName,
       }));
@@ -96,20 +92,19 @@ export default function Checkout() {
       const ds = ship.find((a: SavedAddress) => a.is_default) || ship[0];
       if (ds) {
         setSelShippingId(ds.id);
-        const addrData = applyAddr(ds, false);
+        const addressData = applyAddress(ds, false);
         setFormData((p) => ({
           ...p,
-          ...addrData,
-          // If address is missing name/email, keep our fetched ones
-          firstName: addrData.firstName || p.firstName,
-          lastName: addrData.lastName || p.lastName,
-          email: addrData.email || p.email,
+          ...addressData,
+          firstName: addressData.firstName || p.firstName,
+          lastName: addressData.lastName || p.lastName,
+          email: addressData.email || p.email,
         }));
       }
       const db = bill.find((a: SavedAddress) => a.is_default) || bill[0];
       if (db) {
         setSelBillingId(db.id);
-        const billData = applyAddr(db, true);
+        const billData = applyAddress(db, true);
         setFormData((p) => ({
           ...p,
           ...billData,
@@ -131,7 +126,7 @@ export default function Checkout() {
       });
     } else {
       const a = (b ? savedBilling : savedShipping).find((x) => x.id === id);
-      if (a) setFormData((p) => ({ ...p, ...applyAddr(a, b) }));
+      if (a) setFormData((p) => ({ ...p, ...applyAddress(a, b) }));
     }
   };
 

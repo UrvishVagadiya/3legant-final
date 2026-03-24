@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
 import OrderExpandedDetails from "./OrderExpandedDetails";
+import { useAuth } from "@/context/AuthContext";
 
 interface OrderItem {
   id: string;
@@ -33,7 +34,6 @@ interface Order {
 }
 
 const badgeStyles: Record<string, { bg: string; text: string; dot: string; border: string }> = {
-  // Order Statuses
   delivered: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", border: "border-emerald-100" },
   shipped: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500", border: "border-blue-100" },
   confirmed: { bg: "bg-indigo-50", text: "text-indigo-700", dot: "bg-indigo-500", border: "border-indigo-100" },
@@ -41,7 +41,7 @@ const badgeStyles: Record<string, { bg: string; text: string; dot: string; borde
   pending: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500", border: "border-amber-100" },
   cancelled: { bg: "bg-rose-50", text: "text-rose-700", dot: "bg-rose-500", border: "border-rose-100" },
   refunded: { bg: "bg-purple-50", text: "text-purple-700", dot: "bg-purple-500", border: "border-purple-100" },
-  // Payment Statuses
+
   completed: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", border: "border-emerald-100" },
   succeeded: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", border: "border-emerald-100" },
   failed: { bg: "bg-rose-50", text: "text-rose-700", dot: "bg-rose-500", border: "border-rose-100" },
@@ -72,8 +72,6 @@ const formatDate = (dateStr: string) =>
     day: "numeric",
   });
 
-import { useAuth } from "@/context/AuthContext";
-
 const OrdersHistory = () => {
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -85,7 +83,7 @@ const OrdersHistory = () => {
   useEffect(() => {
     const fetchOrders = async () => {
       if (!user) {
-        setLoading(false); 
+        setLoading(false);
         return;
       }
 
@@ -199,30 +197,30 @@ const OrdersHistory = () => {
                     <StatusBadge type="payment" status={order.payment_status} />
                   </div>
                 </div>
-              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4">
                   <span className="font-semibold text-[#141718]">
                     ${(Number(order.total) || (Number(order.subtotal) + Number(order.shipping_cost) - Number(order.discount))).toFixed(2)}
                   </span>
-                {expandedOrder === order.id ? (
-                  <ChevronUp size={18} className="text-[#6C7275]" />
-                ) : (
-                  <ChevronDown size={18} className="text-[#6C7275]" />
-                )}
-              </div>
-            </button>
+                  {expandedOrder === order.id ? (
+                    <ChevronUp size={18} className="text-[#6C7275]" />
+                  ) : (
+                    <ChevronDown size={18} className="text-[#6C7275]" />
+                  )}
+                </div>
+              </button>
 
-            {expandedOrder === order.id && (
-              <OrderExpandedDetails
-                order={{
-                  ...order,
-                  payment_status: order.payment_status
-                }}
-                items={orderItems[order.id] || []}
-                loadingItems={loadingItems === order.id}
-              />
-            )}
-          </div>
-        )))}
+              {expandedOrder === order.id && (
+                <OrderExpandedDetails
+                  order={{
+                    ...order,
+                    payment_status: order.payment_status
+                  }}
+                  items={orderItems[order.id] || []}
+                  loadingItems={loadingItems === order.id}
+                />
+              )}
+            </div>
+          )))}
       </div>
     </div>
   );

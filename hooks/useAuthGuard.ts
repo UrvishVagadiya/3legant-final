@@ -11,7 +11,7 @@ export function useAuthGuard() {
 
     const requireAuth = useCallback(
         (action: () => void) => {
-            if (loading) return; // Wait for auth state to load
+            if (loading) return; 
             
             if (authStatus) {
                 action();

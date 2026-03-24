@@ -23,7 +23,8 @@ export default function AdminProducts() {
     handleSubmit,
     handleDelete,
     setShowForm,
-    setImageFile,
+    setImageFiles,
+    imageFiles,
   } = useAdminProducts();
 
   useEffect(() => {
@@ -100,10 +101,11 @@ export default function AdminProducts() {
           formData={formData}
           setFormData={setFormData}
           editingId={editingId}
+          imageFiles={imageFiles}
           submitting={submitting}
           onSubmit={handleSubmit}
           onClose={() => setShowForm(false)}
-          onImageChange={setImageFile}
+          onImageChange={setImageFiles}
         />
       )}
     </div>

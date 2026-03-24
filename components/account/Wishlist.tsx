@@ -1,5 +1,4 @@
 "use client";
-import React from "react";
 import Image from "next/image";
 import { X } from "lucide-react";
 import { useWishlistStore } from "../../store/wishlistStore";
@@ -90,6 +89,7 @@ const Wishlist = () => {
                             : item.price,
                         image: item.image,
                         color: item.color || "Default",
+                        stock: item.stock,
                       }, user)
                     }
                     className="bg-[#141718] text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors w-full sm:w-auto"
@@ -151,6 +151,7 @@ const Wishlist = () => {
                       : item.price,
                   image: item.image,
                   color: item.color || "Default",
+                  stock: item.stock,
                 }, user)
               }
               className="bg-[#141718] text-white px-6 py-3 mt-1 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors w-full"

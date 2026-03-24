@@ -5,6 +5,7 @@ import { AiOutlineShop } from "react-icons/ai";
 import { AiOutlineMail } from "react-icons/ai";
 import { LiaMoneyBillSolid, LiaShippingFastSolid } from "react-icons/lia";
 import { LuLockKeyhole } from "react-icons/lu";
+import ContactForm from "@/components/sections/ContactForm";
 
 const ContactUs = () => {
   const infos = [
@@ -123,42 +124,7 @@ const ContactUs = () => {
           ))}
         </div>
         <div className="flex flex-col-reverse lg:flex-row w-full gap-8 lg:gap-3 mb-18">
-          <div className="w-full lg:w-1/2 my-2">
-            <div className="flex flex-col gap-2 mb-3">
-              <label className="uppercase text-xs md:text-sm text-gray-500 font-semibold">
-                Full Name
-              </label>
-              <input
-                type="text"
-                placeholder="Your Name"
-                className="border rounded-md px-4 py-2 sm:py-3 outline-none text-sm md:text-base"
-              />
-            </div>
-            <div className="flex flex-col gap-2 mb-3">
-              <label className="uppercase text-xs md:text-sm text-gray-500 font-semibold">
-                Email Address
-              </label>
-              <input
-                type="email"
-                placeholder="Your Email"
-                className="border rounded-md px-4 py-2 sm:py-3 outline-none text-sm md:text-base"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="uppercase text-xs md:text-sm text-gray-500 font-semibold">
-                Message
-              </label>
-              <textarea
-                placeholder="Your message"
-                className="border rounded-md h-35 px-4 py-2 sm:py-3 outline-none text-sm md:text-base resize-none"
-              />
-            </div>
-            <div className="w-47.25 mt-6 transition-all duration-300 py-2 md:py-3 rounded-lg bg-black flex items-center justify-center cursor-pointer shadow-lg hover:bg-gray-800 hover:scale-[1.02]">
-              <h2 className="text-white font-medium text-sm md:text-base">
-                Send Message
-              </h2>
-            </div>
-          </div>
+          <ContactForm />
           <div className="w-full lg:w-1/2 h-87.5 lg:h-auto p-0 lg:p-3 mb-2 lg:mb-0 flex flex-col">
             <iframe
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3670.0000000000005!2d72.8310623152608!3d21.170240992318026!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x395e849b0c12345%3A0x123456789abcdef!2sSurat%2C%20Gujarat%2C%20India!5e0!3m2!1sen!2s!4v1690000000000"

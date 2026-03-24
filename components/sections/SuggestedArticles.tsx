@@ -14,14 +14,9 @@ const SuggestedArticles = ({ articles }: { articles: Article[] }) => (
       <h2 className="text-[22px] md:text-3xl font-medium text-[#141718]">
         You might also like
       </h2>
-      <Link
-        href="/blogs"
-        className="text-sm font-medium border-black pb-0.5 whitespace-nowrap hidden sm:block"
-      >
-        <div className="flex">
-          <ButtonText text="More Atricles" linkTo={"blogs"} />
-        </div>
-      </Link>
+      <div className="hidden sm:block">
+        <ButtonText text="More Articles" linkTo="blogs" />
+      </div>
     </div>
 
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
@@ -49,14 +44,7 @@ const SuggestedArticles = ({ articles }: { articles: Article[] }) => (
     </div>
 
     <div className="sm:hidden mt-8 flex justify-center">
-      <Link
-        href="/blogs"
-        className="text-[15px] font-medium border-[#141718] pb-0.5 text-[#141718]"
-      >
-        <div className="flex">
-          <ButtonText text="More Atricles" linkTo={"blogs"} />
-        </div>
-      </Link>
+      <ButtonText text="More Articles" linkTo="blogs" />
     </div>
   </div>
 );

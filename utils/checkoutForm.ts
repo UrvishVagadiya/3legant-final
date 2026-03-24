@@ -9,7 +9,7 @@ const DB: Record<string, string> = {
     firstName: "first_name", lastName: "last_name", phone: "phone",
     streetAddress: "street_address", country: "country", city: "city", state: "state", zipCode: "zip_code",
 };
-export function applyAddr(address: SavedAddress, isBilling: boolean): Record<string, string> {
+export function applyAddress(address: SavedAddress, isBilling: boolean): Record<string, string> {
     const c = isBilling ? (s: string) => `billing${s[0].toUpperCase()}${s.slice(1)}` : (s: string) => s;
     const r: Record<string, string> = {};
     F.forEach((f) => (r[c(f)] = (address as any)[DB[f]] || ""));

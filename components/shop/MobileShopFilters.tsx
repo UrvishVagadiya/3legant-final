@@ -24,6 +24,7 @@ interface MobileShopFiltersProps {
   onPriceSelect: (label: string) => void;
   onToggleDropdown: (name: string) => void;
   onSort: (option: string) => void;
+  sortOption: string;
   mobileIcons: { icon: React.ReactNode; grid: number }[];
 }
 
@@ -42,6 +43,7 @@ const MobileShopFilters = ({
   onPriceSelect,
   onToggleDropdown,
   onSort,
+  sortOption,
   mobileIcons,
 }: MobileShopFiltersProps) => {
   const renderFilters = (compact: boolean) => (
@@ -96,7 +98,7 @@ const MobileShopFilters = ({
           <h2 className="font-semibold text-sm text-[#141718]">
             {selectedCategory}
           </h2>
-          <SortByMenu onSort={onSort} />
+          <SortByMenu onSort={onSort} currentSort={sortOption} />
         </div>
       </>
     );
@@ -106,7 +108,7 @@ const MobileShopFilters = ({
     <>
       <div className="flex flex-row gap-3">{renderFilters(true)}</div>
       <div className="flex items-center justify-between">
-        <SortByMenu onSort={onSort} align="left" />
+        <SortByMenu onSort={onSort} align="left" currentSort={sortOption} />
         <GridIconBar
           icons={mobileIcons}
           activeGrid={mobileViewGrid}

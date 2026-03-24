@@ -31,6 +31,7 @@ const Shop = () => {
     setSelectedCategory,
     selectedPrices,
     handlePriceChange,
+    sortOption,
     setSortOption,
     openDropdown,
     setOpenDropdown,
@@ -85,6 +86,7 @@ const Shop = () => {
               onPriceSelect={handlePriceSelect}
               onToggleDropdown={toggleDropdown}
               onSort={setSortOption}
+              sortOption={sortOption}
               mobileIcons={mobileIcons}
             />
           </div>
@@ -116,7 +118,7 @@ const Shop = () => {
               </div>
             )}
             <div className="flex items-center gap-6 pb-1">
-              <SortByMenu onSort={setSortOption} />
+              <SortByMenu onSort={setSortOption} currentSort={sortOption} />
               <GridIconBar
                 icons={desktopIcons}
                 activeGrid={viewGrid}

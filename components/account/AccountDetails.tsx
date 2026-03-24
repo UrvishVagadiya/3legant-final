@@ -41,8 +41,8 @@ const Field = ({
   validate?: any;
 }) => {
   const inputClass = `w-full border rounded-[6px] px-4 py-3 outline-none transition-colors ${errors[name]
-      ? "border-red-500"
-      : "border-gray-300 focus:border-black bg-white"
+    ? "border-red-500"
+    : "border-gray-300 focus:border-black bg-white"
     }`;
   const required = label.includes("*")
     ? `${label.replace(" *", "").replace("*", "").trim()} is required`

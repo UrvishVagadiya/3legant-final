@@ -44,7 +44,6 @@ export const useCartStore = create<CartState>()(
                 set((state) => {
                     const existingItem = state.items.find(i => i.id === safeItem.id && i.color === safeItem.color);
                     if (existingItem) {
-                        // Limit by stock
                         if (existingItem.quantity >= safeItem.stock) {
                             toast.error(`Only ${safeItem.stock} items available in stock`, {
                                 id: 'stock-limit-error',

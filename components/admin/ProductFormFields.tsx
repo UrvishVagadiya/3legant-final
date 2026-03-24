@@ -93,13 +93,15 @@ interface Props {
   formData: ProductFormData;
   setFormData: React.Dispatch<React.SetStateAction<ProductFormData>>;
   editingId: string | null;
-  onImageChange: (file: File) => void;
+  imageFiles: (File | null)[];
+  onImageChange: (files: (File | null)[]) => void;
 }
 
 export default function ProductFormFields({
   formData,
   setFormData,
   editingId,
+  imageFiles,
   onImageChange,
 }: Props) {
   const handleChange = (
@@ -113,20 +115,38 @@ export default function ProductFormFields({
     }));
   };
 
+  const handleFileChange = (index: number, file: File | null) => {
+    const newFiles = [...imageFiles];
+    newFiles[index] = file;
+    onImageChange(newFiles);
+  };
+
   return (
     <>
-      <div>
-        <label className="block text-xs font-semibold text-[#6C7275] mb-1 uppercase">
-          Product Image{!editingId && " *"}
+      <div className="space-y-4">
+        <label className="block text-xs font-semibold text-[#6C7275] mb-2 uppercase">
+          Product Images (Min 1, Max 6)
         </label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) =>
-            e.target.files?.[0] && onImageChange(e.target.files[0])
-          }
-          className="w-full text-sm"
-        />
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+          {new Array(6).fill(0).map((_, i) => (
+            <div key={i} className="flex flex-col gap-2 p-3 border border-dashed border-gray-200 rounded-lg bg-gray-50/50">
+              <label className="text-[10px] font-bold text-gray-400 uppercase">
+                {i === 0 ? "Thumbnail (Main)" : `View ${i}`}
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleFileChange(i, e.target.files?.[0] || null)}
+                className="text-[10px] w-full"
+              />
+              {imageFiles && imageFiles[i] && (
+                <div className="text-[10px] text-green-600 truncate">
+                  ✓ {imageFiles[i]?.name}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
       <Input
         label="Title"

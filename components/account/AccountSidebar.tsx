@@ -5,6 +5,7 @@ import { FaPencil } from "react-icons/fa6";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { v4 as uuidv4 } from "uuid";
+import { useAuth } from "@/context/AuthContext";
 
 type Tab = "account" | "address" | "orders" | "wishlist";
 
@@ -24,8 +25,6 @@ const tabs: { value: Tab; label: string }[] = [
   { value: "wishlist", label: "Wishlist" },
 ];
 
-import { useAuth } from "@/context/AuthContext";
-
 const AccountSidebar = ({
   fullName,
   displayName,
@@ -41,9 +40,7 @@ const AccountSidebar = ({
   const supabase = createClient();
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    // console.log("File input changed:", e.target.files);
     const file = e.target.files?.[0];
-    //  console.log(file);
     if (!file || !user) return;
     setIsUploading(true);
     try {

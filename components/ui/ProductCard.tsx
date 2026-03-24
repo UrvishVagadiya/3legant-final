@@ -1,4 +1,5 @@
 "use client";
+import React from "react";
 import { GoHeart, GoHeartFill } from "react-icons/go";
 import { IoMdStar, IoMdStarHalf, IoMdStarOutline } from "react-icons/io";
 import Link from "next/link";
@@ -12,6 +13,7 @@ interface ProductCardProps {
     id: number | string;
     img?: string;
     image_url?: string;
+    image?: string;
     title?: string;
     name?: string;
     price: number;
@@ -64,7 +66,7 @@ const ProductCard = ({
   avgRating = 0,
   reviewCount = 0,
 }: ProductCardProps) => {
-  const image = product.img || product.image_url || "/image-1.png";
+  const image = product.img || product.image_url || product.image || "/image-1.png";
   const title = product.title || product.name || "";
   const rawMrp = product.mrp || product.MRP || product.old_price || 0;
   const expired = isOfferExpired(product.valid_until);
@@ -81,10 +83,15 @@ const ProductCard = ({
   const badgePad = isSmall ? "px-3" : "px-2.5";
   const padding = isSmall ? "p-3 md:p-4" : "p-3";
 
-  const colorOptions = Array.isArray(product.color) ? product.color : product.color ? [product.color] : [];
+  const colorOptions = Array.isArray(product.color) 
+    ? product.color 
+    : product.color 
+      ? [product.color] 
+      : [];
   const firstColor = colorOptions[0];
-  const colorHex = firstColor ? colorMap[firstColor] : null;
-  const shouldTint = firstColor && firstColor.toLowerCase() !== "white";
+  const [selectedColor, setSelectedColor] = React.useState(firstColor || "");
+  const colorHex = selectedColor ? colorMap[selectedColor] : null;
+  const shouldTint = selectedColor && selectedColor.toLowerCase() !== "white";
 
   const isOutOfStock = (product.stock ?? 0) <= 0;
 
@@ -144,10 +151,32 @@ const ProductCard = ({
       </div>
 
       <div className={isSmall ? "my-3" : "mt-3"}>
-        <RatingStars
-          rating={avgRating}
-          className={`text-[#141718] mb-1.5 md:mb-2 ${isSmall ? "text-sm md:text-base" : "text-[14px]"}`}
-        />
+        <div className="flex items-center justify-between mb-1">
+          <RatingStars
+            rating={avgRating}
+            className={`text-[#141718] ${isSmall ? "text-sm md:text-base" : "text-[14px]"}`}
+          />
+          {colorOptions.length > 1 && (
+            <div className="flex gap-1.5 z-20">
+              {colorOptions.slice(0, 4).map((c: string) => (
+                <button
+                  key={c}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setSelectedColor(c);
+                  }}
+                  title={c}
+                  className={`w-3.5 h-3.5 rounded-full border border-gray-200 transition-transform hover:scale-110 ${selectedColor === c ? "ring-1 ring-[#141718] ring-offset-1" : ""}`}
+                  style={{ backgroundColor: colorMap[c] || "#E8ECEF" }}
+                />
+              ))}
+              {colorOptions.length > 4 && (
+                <span className="text-[10px] text-gray-400 font-medium">+{colorOptions.length - 4}</span>
+              )}
+            </div>
+          )}
+        </div>
         <h3
           className={`font-semibold text-[#141718] mb-1 truncate ${isSmall ? "text-base md:text-lg" : "text-[15px]"}`}
         >

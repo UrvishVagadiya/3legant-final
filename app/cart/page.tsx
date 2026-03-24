@@ -117,12 +117,12 @@ const Cart = () => {
               </button>
             </div>
             <div className="max-w-sm">
-              <CouponSuggestions 
+              <CouponSuggestions
                 onSelect={(code: string) => {
                   setCouponCode(code);
                   setTimeout(() => handleApplyCoupon(), 0);
-                }} 
-                subtotal={subtotal} 
+                }}
+                subtotal={subtotal}
               />
             </div>
           </div>

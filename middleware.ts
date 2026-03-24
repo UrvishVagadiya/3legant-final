@@ -17,7 +17,7 @@ export async function middleware(request: NextRequest) {
                     return request.cookies.getAll();
                 },
                 setAll(cookiesToSet) {
-                    cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value));
+                    cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
                     supabaseResponse = NextResponse.next({
                         request,
                     });
@@ -29,32 +29,36 @@ export async function middleware(request: NextRequest) {
         },
     );
 
-    const isAdminPath = request.nextUrl.pathname.startsWith("/admin");
+    try {
+        const isAdminPath = request.nextUrl.pathname.startsWith("/admin");
 
-    if (isAdminPath) {
-        // Important: call getUser to refresh session if needed
-        const { data: { user } } = await supabase.auth.getUser();
+        if (isAdminPath) {
+            const { data: { user } } = await supabase.auth.getUser();
 
-        if (!user) {
+            if (!user) {
+                return NextResponse.redirect(new URL("/signin", request.url));
+            }
+
+            const { data: profile, error } = await supabase
+                .from("user_profiles")
+                .select("role")
+                .eq("id", user.id)
+                .maybeSingle();
+
+            if (error || profile?.role !== "admin") {
+                console.error("Middleware admin check failed:", error || "Not an admin");
+                return NextResponse.redirect(new URL("/", request.url));
+            }
+        } else {
+            await supabase.auth.getUser();
+        }
+    } catch (error) {
+        console.error("Middleware Supabase fetch failed:", error);
+        // During development or network failure, we let the request continue 
+        // if it's not a protected admin path, or redirect if it is.
+        if (request.nextUrl.pathname.startsWith("/admin")) {
             return NextResponse.redirect(new URL("/signin", request.url));
         }
-
-        const { data: profile, error } = await supabase
-            .from("user_profiles")
-            .select("role")
-            .eq("id", user.id)
-            .maybeSingle();
-
-        if (error || profile?.role !== "admin") {
-            console.error("Middleware admin check failed:", error || "Not an admin");
-            return NextResponse.redirect(new URL("/", request.url));
-        }
-    } else {
-        // For non-admin paths, we still might want to refresh the session
-        // but it's less critical to await getUser() if performance is an issue.
-        // However, standard Supabase Next.js middleware strategy usually awaits it.
-        // We'll keep it for security but ensure it's outside the role query.
-        await supabase.auth.getUser();
     }
 
     return supabaseResponse;

@@ -11,7 +11,7 @@ export function useAdminProducts() {
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [formData, setFormData] = useState<ProductFormData>(emptyProductForm);
-    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imageFiles, setImageFiles] = useState<(File | null)[]>(new Array(6).fill(null));
     const [submitting, setSubmitting] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [deleting, setDeleting] = useState<string | null>(null);
@@ -31,14 +31,14 @@ export function useAdminProducts() {
             status: p.status || "active", measurements: p.measurements || "",
             weight: p.weight || "", valid_until: p.valid_until ? p.valid_until.slice(0, 16) : "",
         });
-        setImageFile(null);
+        setImageFiles(new Array(6).fill(null));
         setShowForm(true);
     };
 
     const openAddForm = () => {
         setEditingId(null);
         setFormData(emptyProductForm);
-        setImageFile(null);
+        setImageFiles(new Array(6).fill(null));
         setShowForm(true);
     };
 
@@ -46,13 +46,20 @@ export function useAdminProducts() {
         e.preventDefault();
         setSubmitting(true);
         try {
-            let imageUrl: string | undefined;
-            if (imageFile) {
-                const fileName = `${Date.now()}-${imageFile.name}`;
-                const { error: uploadError } = await supabase.storage.from("product_img").upload(fileName, imageFile);
-                if (uploadError) throw uploadError;
-                imageUrl = supabase.storage.from("product_img").getPublicUrl(fileName).data.publicUrl;
+            const imageUrls: string[] = [];
+            
+            // Loop through all 6 image slots
+            for (let i = 0; i < imageFiles.length; i++) {
+                const file = imageFiles[i];
+                if (file) {
+                    const fileName = `${Date.now()}-${i}-${file.name}`;
+                    const { error: uploadError } = await supabase.storage.from("product_img").upload(fileName, file);
+                    if (uploadError) throw uploadError;
+                    const publicUrl = supabase.storage.from("product_img").getPublicUrl(fileName).data.publicUrl;
+                    imageUrls.push(publicUrl);
+                }
             }
+
             const priceNum = Number(formData.price);
             const mrpNum = formData.mrp ? Number(formData.mrp) : null;
             const productData: any = {
@@ -63,15 +70,18 @@ export function useAdminProducts() {
                 weight: formData.weight || null, valid_until: formData.valid_until ? new Date(formData.valid_until).toISOString() : null,
             };
             if (mrpNum) productData.mrp = mrpNum;
-            if (imageUrl) productData.img = imageUrl;
+            
+            if (imageUrls.length > 0) {
+                productData.img = imageUrls[0]; // Maintain primary image column
+                productData.images = imageUrls; // Add to new images array
+            }
 
             if (editingId) {
                 const { error } = await supabase.from("products").update(productData).eq("id", editingId);
                 if (error) throw error;
                 toast.success("Product updated!");
             } else {
-                if (!imageUrl) { toast.error("Please select an image"); setSubmitting(false); return; }
-                productData.img = imageUrl;
+                if (imageUrls.length === 0) { toast.error("Please select at least one image"); setSubmitting(false); return; }
                 const { error } = await supabase.from("products").insert([productData]);
                 if (error) throw error;
                 toast.success("Product added!");
@@ -79,7 +89,7 @@ export function useAdminProducts() {
             setShowForm(false);
             setFormData(emptyProductForm);
             setEditingId(null);
-            setImageFile(null);
+            setImageFiles(new Array(6).fill(null));
             fetchProducts();
         } catch (err: any) {
             toast.error(err.message || "Failed to save product");
@@ -104,6 +114,6 @@ export function useAdminProducts() {
     return {
         loading, showForm, editingId, formData, setFormData, submitting, searchQuery, setSearchQuery,
         deleting, filtered, fetchProducts, openEditForm, openAddForm, handleSubmit, handleDelete,
-        setShowForm, setImageFile,
+        setShowForm, setImageFiles, imageFiles,
     };
 }

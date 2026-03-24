@@ -6,24 +6,15 @@ import { isOfferExpired } from "@/utils/isOfferExpired";
 import { colorMap } from "../product/ColorSelector";
 import TintedProductImage from "../product/TintedProductImage";
 
-interface Product {
-  id: number;
-  img: string;
-  title: string;
-  price: number;
-  mrp?: number;
-  valid_until?: string | number | null;
-  color?: string[] | string;
-  stock?: number;
-}
+import { Product } from "@/store/productStore";
 
 interface ArrivalCardProps {
   card: Product;
   isMounted: boolean;
-  isInWishlist: (id: number) => boolean;
+  isInWishlist: (id: number | string) => boolean;
   handleWishlistToggle: (e: React.MouseEvent, card: Product) => void;
   handleAddToCart: (e: React.MouseEvent, card: Product) => void;
-  getRating: (id: number) => { avgRating: number };
+  getRating: (id: number | string) => { avgRating: number };
 }
 
 const discount = (price: number, mrp?: number) => {
@@ -43,11 +34,11 @@ const ArrivalCard = ({
   const displayPrice =
     expired && card.mrp && card.mrp > card.price ? card.mrp : card.price;
   const displayMrp = expired ? undefined : card.mrp;
-    const colorOptions = Array.isArray(card.color) ? card.color : card.color ? [card.color] : [];
-    const firstColor = colorOptions[0];
-    const colorHex = firstColor ? colorMap[firstColor] : null;
-    const shouldTint = firstColor && firstColor.toLowerCase() !== "white";
-    const isOutOfStock = (card.stock ?? 0) <= 0;
+  const colorOptions = Array.isArray(card.color) ? card.color : card.color ? [card.color] : [];
+  const firstColor = colorOptions[0];
+  const colorHex = firstColor ? colorMap[firstColor] : null;
+  const shouldTint = firstColor && firstColor.toLowerCase() !== "white";
+  const isOutOfStock = (card.stock ?? 0) <= 0;
 
   return (
     <Link

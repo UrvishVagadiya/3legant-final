@@ -16,13 +16,21 @@ export function useProductSearch(limit = 8) {
     const [results, setResults] = useState<SearchProduct[]>([]);
     const [loading, setLoading] = useState(false);
     const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const lastSearchQuery = useRef<string>("");
     const supabase = createClient();
 
     const searchProducts = useCallback(
         async (searchTerm: string) => {
-            if (!searchTerm.trim()) {
+            const trimmedTerm = searchTerm.trim();
+            if (!trimmedTerm) {
                 setResults([]);
                 setLoading(false);
+                lastSearchQuery.current = "";
+                return;
+            }
+
+            // Don't search if the term is the same as the last successful search
+            if (trimmedTerm === lastSearchQuery.current) {
                 return;
             }
 
@@ -35,6 +43,7 @@ export function useProductSearch(limit = 8) {
 
             if (!error && data) {
                 setResults(data);
+                lastSearchQuery.current = trimmedTerm;
             } else {
                 setResults([]);
             }
@@ -54,6 +63,7 @@ export function useProductSearch(limit = 8) {
     const clearSearch = () => {
         setQuery("");
         setResults([]);
+        lastSearchQuery.current = "";
     };
 
     return { query, results, loading, handleSearchChange, clearSearch };

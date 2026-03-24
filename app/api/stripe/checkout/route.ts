@@ -36,7 +36,6 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Build line items for Stripe
         const lineItems = items.map(
             (item: {
                 name: string;
@@ -56,7 +55,6 @@ export async function POST(req: NextRequest) {
             })
         );
 
-        // Add shipping cost as a line item if > 0
         if (shippingCost > 0) {
             lineItems.push({
                 price_data: {
@@ -71,7 +69,6 @@ export async function POST(req: NextRequest) {
             });
         }
 
-        // Build discounts array for Stripe coupon if applicable
         const discounts: { coupon: string }[] = [];
         if (discount > 0) {
             const stripeCoupon = await stripe.coupons.create({
@@ -85,7 +82,6 @@ export async function POST(req: NextRequest) {
 
         const origin = req.headers.get("origin") || "http://localhost:3000";
 
-        // Create Stripe Checkout Session
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ["card"],
             line_items: lineItems,
