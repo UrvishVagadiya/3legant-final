@@ -8,14 +8,7 @@ import GridIconBar from "@/components/shop/GridIconBar";
 import BlogSortMenu from "@/components/sections/BlogSortMenu";
 import { createClient } from "@/utils/supabase/client";
 
-interface Blog {
-  id: number;
-  title: string;
-  img: string;
-  date: string;
-  timestamp: number;
-  description: string;
-}
+import { Blog } from "@/types/blog";
 
 const desktopIcons = [
   { icon: <BsGrid3X3GapFill />, grid: 3 },
@@ -44,7 +37,7 @@ const Blogs = () => {
       const { data, error } = await supabase
         .from("blogs")
         .select("*")
-        .order("timestamp", { ascending: false });
+        .order("date", { ascending: false });
 
       if (data && !error) {
         setBlogs(data);
@@ -62,9 +55,9 @@ const Blogs = () => {
     else if (sortOption === "za")
       result.sort((a, b) => b.title.localeCompare(a.title));
     else if (sortOption === "newest")
-      result.sort((a, b) => b.timestamp - a.timestamp);
+      result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     else if (sortOption === "oldest")
-      result.sort((a, b) => a.timestamp - b.timestamp);
+      result.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     return result;
   }, [sortOption, blogs]);
 
@@ -169,11 +162,15 @@ const Blogs = () => {
                   {article.title}
                 </h3>
                 <p className="text-[12px] md:text-sm text-[#6C7275] font-medium">
-                  {article.date}
+                  {new Date(article.date).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
                 </p>
                 {viewGrid === 1 && (
                   <p className="hidden md:block mt-4 text-[#6C7275] line-clamp-3 leading-relaxed">
-                    {article.description || "Discover the secrets to making your home look stunning and professionally designed without breaking the bank."}
+                    {article.content?.replace(/[#*`]/g, "").substring(0, 160)}...
                   </p>
                 )}
               </div>

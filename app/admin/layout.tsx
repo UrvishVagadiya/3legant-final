@@ -14,6 +14,8 @@ import {
   Menu,
   X,
   Mail,
+  FileText,
+  Settings,
 } from "lucide-react";
 
 const navItems = [
@@ -23,7 +25,10 @@ const navItems = [
   { href: "/admin/payments", label: "Payments", icon: CreditCard },
   { href: "/admin/coupons", label: "Coupons", icon: Ticket },
   { href: "/admin/messages", label: "Messages", icon: Mail },
+  { href: "/admin/blogs", label: "Blogs", icon: FileText },
+  { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
+
 
 import { useAuth } from "@/context/AuthContext";
 

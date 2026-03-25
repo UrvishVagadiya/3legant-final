@@ -1,28 +1,40 @@
-import React from "react";
+"use client";
+
+import React, { useEffect, useState } from "react";
 import ButtonText from "../ui/ButtonText";
 import Link from "next/link";
+import { createClient } from "@/utils/supabase/client";
+
+interface Article {
+  id: number;
+  img: string;
+  title: string;
+  date: string;
+}
 
 const Artical = () => {
-  const articles = [
-    {
-      id: "1",
-      img: "/article-1.png",
-      title: "7 ways to decor your home",
-      button: <ButtonText text="Read More" />,
-    },
-    {
-      id: "2",
-      img: "/article-2.png",
-      title: "Kitchen organization",
-      button: <ButtonText text="Read More" />,
-    },
-    {
-      id: "3",
-      img: "/article-3.png",
-      title: "Decor your bedroom",
-      button: <ButtonText text="Read More" />,
-    },
-  ];
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [loading, setLoading] = useState(true);
+  const supabase = createClient();
+
+  useEffect(() => {
+    const fetchArticles = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("blogs")
+        .select("id, title, img, date")
+        .order("date", { ascending: false })
+        .limit(3);
+
+      if (data && !error) {
+        setArticles(data);
+      }
+      setLoading(false);
+    };
+
+    fetchArticles();
+  }, []);
+
   return (
     <div className="px-5 md:px-10 lg:px-40 my-10 flex flex-col gap-6 w-full">
       <div className="flex justify-between items-end mb-4">
@@ -30,24 +42,33 @@ const Artical = () => {
         <ButtonText text="More Articles" linkTo={"blogs"} />
       </div>
       <div className="flex flex-col md:flex-row gap-8 md:gap-4 justify-between w-full">
-        {articles.map((article, index) => (
-          <Link
-            href={`/blogs/${article.id}`}
-            key={article.id}
-            className={`flex flex-col md:flex-row md:items-center md:gap-8`}
-          >
-            <div key={index} className="w-full">
-              <img
-                className="w-full object-cover mt-3"
-                src={article.img}
-                alt={article.title}
-              />
-              <h3 className="my-3 text-base font-medium">{article.title}</h3>
-              <div>{article.button}</div>
-            </div>
-          </Link>
-        ))}
+        {loading ? (
+          <div className="col-span-full py-20 flex justify-center w-full">
+            <div className="w-10 h-10 border-4 border-black border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : (
+          articles.map((article) => (
+            <Link
+              href={`/blogs/${article.id}`}
+              key={article.id}
+              className={`flex flex-col md:flex-row md:items-center md:gap-8 flex-1`}
+            >
+              <div className="w-full">
+                <img
+                  className="w-full h-80 object-cover mt-3 rounded-sm"
+                  src={article.img}
+                  alt={article.title}
+                />
+                <h3 className="my-3 text-base font-medium line-clamp-2">{article.title}</h3>
+                <div>
+                  <ButtonText text="Read More" />
+                </div>
+              </div>
+            </Link>
+          ))
+        )}
       </div>
+
     </div>
   );
 };

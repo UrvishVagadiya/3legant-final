@@ -33,6 +33,7 @@ interface ProductCardProps {
   sizes?: "sm" | "md";
   avgRating?: number;
   reviewCount?: number;
+  showColors?: boolean;
 }
 
 const RatingStars = ({
@@ -65,6 +66,7 @@ const ProductCard = ({
   sizes = "md",
   avgRating = 0,
   reviewCount = 0,
+  showColors = true,
 }: ProductCardProps) => {
   const image = product.img || product.image_url || product.image || "/image-1.png";
   const title = product.title || product.name || "";
@@ -83,10 +85,10 @@ const ProductCard = ({
   const badgePad = isSmall ? "px-3" : "px-2.5";
   const padding = isSmall ? "p-3 md:p-4" : "p-3";
 
-  const colorOptions = Array.isArray(product.color) 
-    ? product.color 
-    : product.color 
-      ? [product.color] 
+  const colorOptions = Array.isArray(product.color)
+    ? product.color
+    : product.color
+      ? [product.color]
       : [];
   const firstColor = colorOptions[0];
   const [selectedColor, setSelectedColor] = React.useState(firstColor || "");
@@ -156,7 +158,7 @@ const ProductCard = ({
             rating={avgRating}
             className={`text-[#141718] ${isSmall ? "text-sm md:text-base" : "text-[14px]"}`}
           />
-          {colorOptions.length > 1 && (
+          {showColors && colorOptions.length > 1 && (
             <div className="flex gap-1.5 z-20">
               {colorOptions.slice(0, 4).map((c: string) => (
                 <button

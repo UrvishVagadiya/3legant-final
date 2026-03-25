@@ -1,6 +1,7 @@
 export const categories = [
-    "All Rooms", "Living Room", "Bedroom", "Kitchen", "Bathroom", "Dinning", "Outdoor", "Office"
+    "All Rooms", "Living Room", "Bedroom", "Kitchen", "Bathroom", "Dinning", "Outdoor"
 ];
+
 
 export const priceRanges = [
     { label: "All Price", min: 0, max: Infinity },

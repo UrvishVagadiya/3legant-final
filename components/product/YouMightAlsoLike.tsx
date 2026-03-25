@@ -63,6 +63,7 @@ export default function YouMightAlsoLike() {
               linkTo={`/product/${card.id}`}
               avgRating={getRating(card.id).avgRating}
               reviewCount={getRating(card.id).reviewCount}
+              showColors={false}
             />
           </div>
         ))}

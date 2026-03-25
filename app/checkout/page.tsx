@@ -15,9 +15,12 @@ import { createClient } from "@/utils/supabase/client";
 import { F, billingKeys, initialForm, applyAddress } from "@/utils/checkoutForm";
 
 import { useAuth } from "@/context/AuthContext";
+import { useSearchParams } from "next/navigation";
+import toast from "react-hot-toast";
 
 export default function Checkout() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
   const { items: cartItems, updateQuantity, shippingMethod, setShippingMethod } = useCartStore();
   const isMounted = useIsMounted();
   const [useDifferentBilling, setUseDifferentBilling] = useState(false);
@@ -38,6 +41,19 @@ export default function Checkout() {
   const total = subtotal + shippingCost - discount;
 
   useEffect(() => {
+    // Check if user returned from cancelled checkout
+    const cancelled = searchParams.get("cancelled");
+    const orderId = searchParams.get("order_id");
+    if (cancelled && orderId) {
+        fetch("/api/orders/cancel-pending", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ orderId }),
+        }).then(() => {
+             toast.error("Payment was cancelled or failed. You can try again.");
+        });
+    }
+
     if (!user) return;
     (async () => {
       const supabase = createClient();

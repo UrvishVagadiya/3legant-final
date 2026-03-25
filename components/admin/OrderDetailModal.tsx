@@ -16,6 +16,7 @@ const badgeStyles: Record<string, { bg: string; text: string; dot: string; borde
   processing: { bg: "bg-sky-50", text: "text-sky-700", dot: "bg-sky-500", border: "border-sky-100" },
   pending: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500", border: "border-amber-100" },
   cancelled: { bg: "bg-rose-50", text: "text-rose-700", dot: "bg-rose-500", border: "border-rose-100" },
+  cancle: { bg: "bg-rose-50", text: "text-rose-700", dot: "bg-rose-500", border: "border-rose-100" },
   refunded: { bg: "bg-purple-50", text: "text-purple-700", dot: "bg-purple-500", border: "border-purple-100" },
   // Payment Statuses
   completed: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", border: "border-emerald-100" },

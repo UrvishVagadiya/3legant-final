@@ -37,7 +37,11 @@ const SuggestedArticles = ({ articles }: { articles: Article[] }) => (
             {article.title}
           </h3>
           <p className="text-xs md:text-sm text-[#6C7275] font-medium">
-            {article.date}
+            {new Date(article.date).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
           </p>
         </Link>
       ))}

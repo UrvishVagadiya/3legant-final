@@ -19,6 +19,9 @@ export async function GET() {
 
     const ordersData = (orders.data || []) as { id: string; total: number; status: string; subtotal: number; shipping_cost: number; discount: number }[];
     const totalRevenue = ordersData.reduce((sum, o) => {
+        // Exclude cancelled and refunded orders from revenue
+        if (o.status === "cancelled" || o.status === "refunded") return sum;
+        
         const orderTotal = Number(o.total) || (Number(o.subtotal || 0) + Number(o.shipping_cost || 0) - Number(o.discount || 0));
         return sum + orderTotal;
     }, 0);

@@ -20,9 +20,7 @@ const blogs = [
     id: 1,
     title: "7 ways to decor your home like a professional",
     img: "https://images.unsplash.com/photo-1484154218962-a197022b5858?q=80&w=1000&auto=format&fit=crop",
-    date: "October 16, 2023",
-    timestamp: new Date("2023-10-16").getTime(),
-    description: "Discover the secrets of professional interior designers and transform your living space with these seven expert tips.",
+    date: "2023-10-16",
     content: `<div>
   <h3>1. Start with a Neutral Base</h3>
   <div>Professional designers often start with neutral walls and large furniture pieces. This allows you to add personality through accessories and artwork that can be easily changed.</div>
@@ -56,9 +54,7 @@ const blogs = [
     id: 2,
     title: "Inside a beautiful kitchen organization",
     img: "https://images.unsplash.com/photo-1588854337236-6889d631faa8?q=80&w=1000&auto=format&fit=crop",
-    date: "October 16, 2023",
-    timestamp: new Date("2023-10-16").getTime(),
-    description: "A well-organized kitchen is the heart of a productive home. Explore our guide to maximizing space and efficiency in your culinary sanctuary.",
+    date: "2023-10-16",
     content: `<div>
   <h3>Maximize Vertical Space</h3>
   <div>Use wall-mounted racks for spices, knives, and even pots and pans to free up valuable counter and cabinet space.</div>
@@ -81,9 +77,7 @@ const blogs = [
     id: 3,
     title: "Decor your bedroom for your children",
     img: "https://images.unsplash.com/photo-1519710164239-da123dc03ef4?q=80&w=1000&auto=format&fit=crop",
-    date: "October 16, 2023",
-    timestamp: new Date("2023-10-16").getTime(),
-    description: "Creating a space that grows with your child is an art. Learn how to balance fun and functionality in children's bedroom design.",
+    date: "2023-10-16",
     content: `<div>
   <h3>Flexible Furniture</h3>
   <div>Choose pieces that can adapt as your child gets older. A crib that turns into a toddler bed or a desk that adjusts in height are great investments.</div>
@@ -106,9 +100,7 @@ const blogs = [
     id: 4,
     title: "Modern Texas Home: A Kid-Friendly Retreat",
     img: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=1000&auto=format&fit=crop",
-    date: "October 16, 2023",
-    timestamp: new Date("2023-10-16").getTime(),
-    description: "Explore a stunning Texas residence that proves modern elegance and high-energy family life can coexist beautifully.",
+    date: "2023-10-16",
     content: `<div>
   <h3>Durability Meets Style</h3>
   <div>In this Texas home, performance fabrics and hardy materials are used throughout, ensuring the sophisticated design can handle anything the kids throw at it.</div>
@@ -125,15 +117,13 @@ const blogs = [
   {
     id: 5,
     title: "Sustainable Living in a Modern Texas Setting",
-    img: "https://images.unsplash.com/photo-1518005020250-eccad1f30a44?q=80&w=1000&auto=format&fit=crop",
-    date: "October 16, 2023",
-    timestamp: new Date("2023-10-16").getTime(),
-    description: "Discover how eco-friendly materials and energy-efficient design are shaping the future of modern Texas architecture.",
+    img: "https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?q=80&w=1000&auto=format&fit=crop",
+    date: "2023-10-16",
     content: `<div>
   <h3>Solar Power Integration</h3>
   <div>This home harnesses the abundant Texas sun with sleek, integrated solar panels that power the entire property while maintaining a clean aesthetic.</div>
   <br/>
-  <img src="https://images.unsplash.com/photo-1518005020250-eccad1f30a44?q=80&w=1000&auto=format&fit=crop" alt="Eco Texas Home" className="w-full rounded-lg my-4" />
+  <img src="https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?q=80&w=1000&auto=format&fit=crop" alt="Eco Texas Home" className="w-full rounded-lg my-4" />
   <br/>
   <h3>Native Landscaping</h3>
   <div>By using native Texas plants, the homeowners have created a beautiful, low-maintenance garden that requires minimal water and supports local wildlife.</div>
@@ -145,15 +135,13 @@ const blogs = [
   {
     id: 6,
     title: "Rustic Charm Meets Modern Texas Design",
-    img: "https://images.unsplash.com/photo-1513519245088-0e12902e35ca?q=80&w=1000&auto=format&fit=crop",
-    date: "October 16, 2023",
-    timestamp: new Date("2023-10-16").getTime(),
-    description: "A unique look at a home that blends traditional farmhouse elements with contemporary industrial touches in the heart of Texas.",
+    img: "https://images.unsplash.com/photo-1449247666642-264389f5f5b1?q=80&w=1000&auto=format&fit=crop",
+    date: "2023-10-16",
     content: `<div>
   <h3>Exposed Beams and Steel</h3>
   <div>The combination of warm, reclaimed wood beams and cool black steel frames creates a dynamic contrast that defines the home's character.</div>
   <br/>
-  <img src="https://images.unsplash.com/photo-1513519245088-0e12902e35ca?q=80&w=1000&auto=format&fit=crop" alt="Rustic Modern" className="w-full rounded-lg my-4" />
+  <img src="https://images.unsplash.com/photo-1449247666642-264389f5f5b1?q=80&w=1000&auto=format&fit=crop" alt="Rustic Modern" className="w-full rounded-lg my-4" />
   <br/>
   <h3>The Modern Hearth</h3>
   <div>A minimalist stone fireplace serves as the central focal point, providing a cozy gathering spot that feels both ancient and brand new.</div>
@@ -165,15 +153,13 @@ const blogs = [
   {
     id: 7,
     title: "The Ultimate Open-Concept Texas Farmhouse",
-    img: "https://images.unsplash.com/photo-1502005229762-bc1320ada1b0?q=80&w=1000&auto=format&fit=crop",
-    date: "October 16, 2023",
-    timestamp: new Date("2023-10-16").getTime(),
-    description: "See how open-concept living can feel intimate and cozy in this sprawling modern farmhouse design.",
+    img: "https://images.unsplash.com/photo-1554995207-c18c20360a59?q=80&w=1000&auto=format&fit=crop",
+    date: "2023-10-16",
     content: `<div>
   <h3>Zones Without Walls</h3>
   <div>Using rugs, lighting, and furniture placement, this home creates distinct living, dining, and cooking areas within one large, airy space.</div>
   <br/>
-  <img src="https://images.unsplash.com/photo-1502005229762-bc1320ada1b0?q=80&w=1000&auto=format&fit=crop" alt="Open Farmhouse" className="w-full rounded-lg my-4" />
+  <img src="https://images.unsplash.com/photo-1554995207-c18c20360a59?q=80&w=1000&auto=format&fit=crop" alt="Open Farmhouse" className="w-full rounded-lg my-4" />
   <br/>
   <h3>High Ceilings, Warm Textures</h3>
   <div>While the ceilings are vaulted and grand, the use of limestone and oak ensures the space feels warm and grounded.</div>
@@ -183,9 +169,7 @@ const blogs = [
     id: 8,
     title: "Minimalist Elegance in a Texas Suburb",
     img: "https://images.unsplash.com/photo-1449247709967-d4461a6a6103?q=80&w=1000&auto=format&fit=crop",
-    date: "October 16, 2023",
-    timestamp: new Date("2023-10-16").getTime(),
-    description: "A masterclass in 'less is more', this suburban Texas home focuses on quality materials and clean lines.",
+    date: "2023-10-16",
     content: `<div>
   <h3>Monochromatic Magic</h3>
   <div>By sticking to a palette of whites, greys, and blacks, the architecture of the home becomes the primary focus, creating a sense of calm.</div>
@@ -200,9 +184,7 @@ const blogs = [
     id: 9,
     title: "Industrial Design in a Texas Urban Loft",
     img: "https://images.unsplash.com/photo-1505691723518-36a5ac3be353?q=80&w=1000&auto=format&fit=crop",
-    date: "October 16, 2023",
-    timestamp: new Date("2023-10-16").getTime(),
-    description: "Steel, brick, and concrete come together in this urban loft that celebrates the raw beauty of Texas's industrial history.",
+    date: "2023-10-16",
     content: `<div>
   <h3>Concrete Countertops</h3>
   <div>Hand-poured concrete provides a durable and edgy surface in the kitchen, perfectly complementing the original brick walls.</div>
@@ -217,9 +199,7 @@ const blogs = [
     id: 10,
     title: "Color pallettes for ultimate relaxation",
     img: "https://images.unsplash.com/photo-1507089947368-19c1da9775ae?q=80&w=1000&auto=format&fit=crop",
-    date: "October 17, 2023",
-    timestamp: new Date("2023-10-17").getTime(),
-    description: "Learn how to use color psychology to create a tranquil and restorative home environment.",
+    date: "2023-10-17",
     content: `<div>
   <h3>Soft Blues and Greens</h3>
   <div>These cool tones are proven to lower heart rates and create a sense of peace, making them perfect for bedrooms and bathrooms.</div>
@@ -236,15 +216,13 @@ const blogs = [
   {
     id: 11,
     title: "Lighting fixtures to make your modern space pop",
-    img: "https://images.unsplash.com/photo-1513506494749-1644c3a9fdeb?q=80&w=1000&auto=format&fit=crop",
-    date: "October 18, 2023",
-    timestamp: new Date("2023-10-18").getTime(),
-    description: "Think of lighting as the jewelry of your home. Discover how to choose fixtures that make a statement.",
+    img: "https://images.unsplash.com/photo-1565814636199-ae8133055c1c?q=80&w=1000&auto=format&fit=crop",
+    date: "2023-10-18",
     content: `<div>
   <h3>Statement Chandeliers</h3>
   <div>A large, modern chandelier can define a dining area and serve as a stunning piece of sculptural art.</div>
   <br/>
-  <img src="https://images.unsplash.com/photo-1513506494749-1644c3a9fdeb?q=80&w=1000&auto=format&fit=crop" alt="Modern Lighting" className="w-full rounded-lg my-4" />
+  <img src="https://images.unsplash.com/photo-1565814636199-ae8133055c1c?q=80&w=1000&auto=format&fit=crop" alt="Modern Lighting" className="w-full rounded-lg my-4" />
   <br/>
   <h3>Architectural Wall Sconces</h3>
   <div>Sconces aren't just for bathrooms; use them in hallways or over bedside tables to add architectural interest.</div>
@@ -257,9 +235,7 @@ const blogs = [
     id: 12,
     title: "How to safely secure furniture around toddlers",
     img: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?q=80&w=1000&auto=format&fit=crop",
-    date: "October 19, 2023",
-    timestamp: new Date("2023-10-19").getTime(),
-    description: "A essential guide to child-proofing your home without sacrificing your interior design vision.",
+    date: "2023-10-19",
     content: `<div>
   <h3>Anchoring Heavy Pieces</h3>
   <div>Always use wall anchors for bookshelves, dressers, and TVs. It's a simple step that provides invaluable peace of mind.</div>

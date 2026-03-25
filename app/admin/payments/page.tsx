@@ -13,7 +13,7 @@ interface Payment {
   refund_status?: string;
 }
 
-const statusBadge = (s: string) => ({ pending: "bg-yellow-100 text-yellow-700", completed: "bg-green-100 text-green-700", failed: "bg-red-100 text-red-700", refunded: "bg-purple-100 text-purple-700" }[s] || "bg-gray-100 text-gray-700");
+const statusBadge = (s: string) => ({ pending: "bg-yellow-100 text-yellow-700", completed: "bg-green-100 text-green-700", failed: "bg-red-100 text-red-700", refunded: "bg-purple-100 text-purple-700", cancle: "bg-red-100 text-red-700" }[s] || "bg-red-100 text-red-700");
 
 export default function AdminPayments() {
   const [payments, setPayments] = useState<Payment[]>([]);

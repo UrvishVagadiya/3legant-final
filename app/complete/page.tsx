@@ -3,6 +3,7 @@ import React, { useEffect, useState, Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import CheckoutStepper from "@/components/sections/CheckoutStepper";
 import { useCartStore } from "@/store/cartStore";
 
@@ -29,6 +30,7 @@ const Complete = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [orderData, setOrderData] = useState<OrderData | null>(null);
+  const [loading, setLoading] = useState(true);
   const { clearCart } = useCartStore();
 
   useEffect(() => {
@@ -50,6 +52,8 @@ const Complete = () => {
           }
         } catch (err) {
           router.push("/");
+        } finally {
+          setLoading(false);
         }
       };
       fetchOrderData();
@@ -57,13 +61,28 @@ const Complete = () => {
       const stored = sessionStorage.getItem("lastOrder");
       if (stored) {
         setOrderData(JSON.parse(stored));
+        setLoading(false);
       } else {
         router.push("/");
       }
     }
   }, [searchParams, router, clearCart]);
 
-  if (!orderData) return null;
+  if (loading || !orderData) {
+    return (
+      <div className="max-w-300 mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16 mb-20 font-poppins text-[#141718]">
+        <div className="flex flex-col items-center justify-center mb-8 md:mb-20">
+          <h1 className="text-4xl md:text-[54px] font-medium mb-8">Processing...</h1>
+          <CheckoutStepper step={3} />
+        </div>
+        <div className="max-w-184.5 w-full mx-auto bg-white rounded-2xl md:shadow-[0px_8px_40px_rgba(0,0,0,0.08)] py-20 md:py-32 px-6 md:px-20 flex flex-col items-center justify-center min-h-[400px]">
+          <Loader2 className="w-12 h-12 text-[#141718] animate-spin mb-6" />
+          <h2 className="text-2xl font-medium text-center">Confirming your payment...</h2>
+          <p className="text-[#6C7275] mt-2 text-center">This will only take a moment.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-300 mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-16 mb-20 font-poppins text-[#141718]">

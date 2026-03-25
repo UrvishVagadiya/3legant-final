@@ -97,13 +97,14 @@ export async function POST(req: NextRequest) {
             console.warn("RPC 'process_order_refund' failed or missing, falling back to manual updates");
             
             await admin.from("orders").update({
-                status: "refunded",
+                status: "cancelled",
                 refund_status: "approved",
                 updated_at: now
             }).eq("id", orderId);
 
+            // Also update the payment status to 'failed'
             await admin.from("payments").update({
-                status: "refunded",
+                status: "failed", // Changed from "cancle" to "failed" as per user request
                 refund_amount: payment.amount,
                 refund_date: now,
                 refund_reason: order.refund_request_reason || "Admin Approved Refund",

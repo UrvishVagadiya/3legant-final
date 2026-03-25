@@ -82,6 +82,90 @@ export async function POST(req: NextRequest) {
 
         const origin = req.headers.get("origin") || "http://localhost:3000";
 
+        // Create order in 'pending' status
+        const orderCode = `#${Date.now().toString().slice(-10)}`;
+        const { data: order, error: orderError } = await supabase
+            .from("orders")
+            .insert({
+                order_code: orderCode,
+                user_id: user.id,
+                status: "pending",
+                subtotal,
+                shipping_cost: shippingCost,
+                discount,
+                tax: 0,
+                total,
+                shipping_method: shippingMethod,
+                coupon_code: couponCode || null,
+                shipping_first_name: shippingInfo.firstName,
+                shipping_last_name: shippingInfo.lastName,
+                shipping_phone: shippingInfo.phone,
+                shipping_email: shippingInfo.email,
+                shipping_street_address: shippingInfo.streetAddress,
+                shipping_city: shippingInfo.city,
+                shipping_state: shippingInfo.state,
+                shipping_zip_code: shippingInfo.zipCode,
+                shipping_country: shippingInfo.country,
+                has_different_billing: useDifferentBilling,
+                ...(useDifferentBilling && billingInfo
+                    ? {
+                        billing_first_name: billingInfo.firstName,
+                        billing_last_name: billingInfo.lastName,
+                        billing_phone: billingInfo.phone,
+                        billing_street_address: billingInfo.streetAddress,
+                        billing_city: billingInfo.city,
+                        billing_state: billingInfo.state,
+                        billing_zip_code: billingInfo.zipCode,
+                        billing_country: billingInfo.country,
+                    }
+                    : {}),
+            })
+            .select()
+            .single();
+
+        if (orderError) {
+            console.error("Failed to create pending order:", orderError);
+            return NextResponse.json({ error: "Failed to create order" }, { status: 500 });
+        }
+
+        // Create order items
+        const orderItems = items.map((item: any) => ({
+            order_id: order.id,
+            product_id: item.id,
+            product_name: item.name,
+            product_image: item.image,
+            color: item.color,
+            quantity: item.quantity,
+            unit_price: Number(item.price),
+            total_price: Number(item.price) * item.quantity,
+        }));
+
+        const { error: itemsError } = await supabase
+            .from("order_items")
+            .insert(orderItems);
+
+        if (itemsError) {
+            console.error("Failed to create order items:", itemsError);
+            // We don't return error here because the order already exists, but it's not ideal
+        }
+
+        // Create initial pending payment record
+        const { error: paymentError } = await supabase
+            .from("payments")
+            .insert({
+                order_id: order.id,
+                user_id: user.id,
+                payment_method: "card",
+                status: "pending",
+                amount: total,
+                currency: "USD",
+                refund_amount: 0,
+            });
+
+        if (paymentError) {
+            console.error("Failed to create pending payment:", paymentError);
+        }
+
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ["card"],
             line_items: lineItems,
@@ -89,6 +173,7 @@ export async function POST(req: NextRequest) {
             ...(discounts.length > 0 ? { discounts } : {}),
             customer_email: user.email,
             metadata: {
+                order_id: order.id, // CRITICAL: Link Stripe session to our order
                 user_id: user.id,
                 shipping_first_name: shippingInfo.firstName,
                 shipping_last_name: shippingInfo.lastName,
@@ -136,7 +221,7 @@ export async function POST(req: NextRequest) {
                 ),
             },
             success_url: `${origin}/complete?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${origin}/checkout`,
+            cancel_url: `${origin}/checkout?cancelled=true&order_id=${order.id}`,
         });
 
         return NextResponse.json({ sessionId: session.id, url: session.url });

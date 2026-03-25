@@ -104,7 +104,7 @@ export const useCartStore = create<CartState>()(
                 const supabase = createClient();
                 const { data, error } = await supabase
                     .from('cart')
-                    .select('*, products(id, title, price, img, stock)')
+                    .select('*, products(id, title, price, img, image_url, image, stock)')
                     .eq('user_id', user.id);
 
                 if (!error && data && data.length > 0) {
@@ -112,7 +112,7 @@ export const useCartStore = create<CartState>()(
                         id: row.product_id,
                         name: row.products?.title || '',
                         price: Number(row.products?.price) || 0,
-                        image: row.products?.img || '/image-1.png',
+                        image: row.products?.img || row.products?.image_url || row.products?.image || '/image-1.png',
                         color: row.color || 'Default',
                         quantity: row.quantity,
                         stock: row.products?.stock || 0,

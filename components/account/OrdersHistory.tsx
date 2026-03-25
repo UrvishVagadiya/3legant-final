@@ -31,6 +31,7 @@ interface Order {
   refund_status: "none" | "requested" | "approved" | "rejected";
   refund_request_reason: string | null;
   refund_requested_at: string | null;
+  delivered_at: string | null;
 }
 
 const badgeStyles: Record<string, { bg: string; text: string; dot: string; border: string }> = {
@@ -40,6 +41,7 @@ const badgeStyles: Record<string, { bg: string; text: string; dot: string; borde
   processing: { bg: "bg-sky-50", text: "text-sky-700", dot: "bg-sky-500", border: "border-sky-100" },
   pending: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500", border: "border-amber-100" },
   cancelled: { bg: "bg-rose-50", text: "text-rose-700", dot: "bg-rose-500", border: "border-rose-100" },
+  cancle: { bg: "bg-rose-50", text: "text-rose-700", dot: "bg-rose-500", border: "border-rose-100" },
   refunded: { bg: "bg-purple-50", text: "text-purple-700", dot: "bg-purple-500", border: "border-purple-100" },
 
   completed: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", border: "border-emerald-100" },
@@ -79,35 +81,49 @@ const OrdersHistory = () => {
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [orderItems, setOrderItems] = useState<Record<string, OrderItem[]>>({});
   const [loadingItems, setLoadingItems] = useState<string | null>(null);
+  const [refundPeriod, setRefundPeriod] = useState<number>(7);
+
+  const fetchOrders = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    const supabase = createClient();
+    
+    // Fetch refund period setting
+    const { data: settings } = await supabase
+      .from("store_settings")
+      .select("value")
+      .eq("id", "refund_period")
+      .single();
+    
+    if (settings?.value?.days) {
+      setRefundPeriod(settings.value.days);
+    }
+
+    const { data, error } = await supabase
+      .from("orders")
+      .select(
+        "id, order_code, created_at, status, subtotal, shipping_cost, discount, total, shipping_method, tracking_number, payments(status), refund_status, refund_request_reason, refund_requested_at, delivered_at",
+      )
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Fetch orders error:", error);
+      setOrders([]);
+    } else if (data) {
+      const mappedData = data.map((o: any) => ({
+        ...o,
+        payment_status: o.payments?.[0]?.status || "failed"
+      }));
+      setOrders(mappedData);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from("orders")
-        .select(
-          "id, order_code, created_at, status, subtotal, shipping_cost, discount, total, shipping_method, tracking_number, payments(status), refund_status, refund_request_reason, refund_requested_at",
-        )
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Fetch orders error:", error);
-        setOrders([]);
-      } else if (data) {
-        const mappedData = data.map((o: any) => ({
-          ...o,
-          payment_status: o.payments?.[0]?.status || "unknown"
-        }));
-        setOrders(mappedData);
-      }
-      setLoading(false);
-    };
     fetchOrders();
   }, [user?.id]);
 
@@ -217,6 +233,8 @@ const OrdersHistory = () => {
                   }}
                   items={orderItems[order.id] || []}
                   loadingItems={loadingItems === order.id}
+                  refundPeriod={refundPeriod}
+                  onStatusUpdate={fetchOrders}
                 />
               )}
             </div>

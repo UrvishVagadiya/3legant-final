@@ -27,12 +27,14 @@ interface Order {
   refund_status: string;
   refund_request_reason?: string | null;
   refund_requested_at?: string | null;
+  delivered_at?: string | null;
 }
 
 interface OrderExpandedDetailsProps {
   order: Order;
   items: OrderItem[];
   loadingItems: boolean;
+  refundPeriod?: number;
   onStatusUpdate?: () => void;
 }
 
@@ -40,13 +42,29 @@ const OrderExpandedDetails = ({
   order,
   items,
   loadingItems,
+  refundPeriod = 7,
   onStatusUpdate,
 }: OrderExpandedDetailsProps) => {
   const [showRefundModal, setShowRefundModal] = useState(false);
 
-  const canRequestRefund = 
+  const isInstantCancelEligible = 
     order.refund_status === "none" && 
-    ["confirmed", "processing", "shipped", "delivered"].includes(order.status);
+    ["pending", "confirmed", "processing"].includes(order.status);
+
+  // Calculate if refund period has expired for delivered orders
+  const isRefundExpired = (() => {
+    if (order.status !== "delivered" || !order.delivered_at) return false;
+    const deliveredDate = new Date(order.delivered_at);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - deliveredDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > refundPeriod;
+  })();
+
+  const isRefundRequestEligible = 
+    order.refund_status === "none" && 
+    !isRefundExpired &&
+    ["shipped", "delivered", "cancelled"].includes(order.status);
 
   return (
     <div className="border-t border-gray-200 p-4 md:p-5 bg-gray-50/50">
@@ -131,7 +149,7 @@ const OrderExpandedDetails = ({
           })()}
         </div>
 
-        {(order.tracking_number || canRequestRefund || order.refund_status !== "none") && (
+        {(order.tracking_number || isInstantCancelEligible || isRefundRequestEligible || order.refund_status !== "none") && (
           <div className="border-t border-gray-100 pt-4 flex flex-wrap items-center justify-between gap-4">
             {order.tracking_number && (
               <div className="flex flex-col">
@@ -141,7 +159,17 @@ const OrderExpandedDetails = ({
             )}
 
             <div className="flex items-center gap-3">
-              {canRequestRefund && (
+              {isInstantCancelEligible && (
+                <button 
+                  onClick={() => setShowRefundModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 border border-rose-600 text-rose-600 rounded-full text-sm font-medium hover:bg-rose-600 hover:text-white transition-all shadow-sm"
+                >
+                  <RefreshCcw size={16} />
+                  Cancel Order
+                </button>
+              )}
+
+              {isRefundRequestEligible && (
                 <button 
                   onClick={() => setShowRefundModal(true)}
                   className="flex items-center gap-2 px-4 py-2 border border-[#141718] rounded-full text-sm font-medium hover:bg-[#141718] hover:text-white transition-all shadow-sm"
@@ -158,7 +186,7 @@ const OrderExpandedDetails = ({
                   'border-red-200 bg-red-50 text-red-700'
                 }`}>
                   <RefreshCcw size={16} />
-                  Refund {order.refund_status}
+                  Cancellation {order.refund_status}
                 </div>
               )}
             </div>
@@ -170,6 +198,7 @@ const OrderExpandedDetails = ({
         <RefundRequestModal
           orderId={order.id}
           orderCode={order.order_code}
+          isInstant={isInstantCancelEligible}
           onClose={() => setShowRefundModal(false)}
           onSuccess={() => onStatusUpdate?.()}
         />

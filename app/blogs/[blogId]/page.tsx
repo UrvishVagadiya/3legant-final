@@ -13,16 +13,29 @@ const MDXComponents = {
   Image,
   Link,
   h2: ({ children }: any) => (
-    <h2 className="text-[22px] md:text-[28px] font-medium mb-3 md:mb-4">
+    <h2 className="text-[26px] md:text-[32px] font-medium mt-10 mb-4 text-[#141718]">
       {children}
     </h2>
   ),
   h3: ({ children }: any) => (
-    <h3 className="text-lg md:text-[22px] font-medium mb-2 md:mb-3">
+    <h3 className="text-xl md:text-2xl font-medium mt-8 mb-3 text-[#141718]">
       {children}
     </h3>
   ),
-  p: ({ children }: any) => <div className="mb-6 md:mb-8 text-[#6C7275]">{children}</div>,
+  p: ({ children }: any) => <p className="mb-6 md:mb-8 text-[#141718] leading-[1.6]">{children}</p>,
+  ul: ({ children }: any) => <ul className="list-disc ml-6 mb-6 space-y-2 text-[#6C7275]">{children}</ul>,
+  HighlightBox: ({ children }: any) => (
+    <div className="my-8 p-6 md:p-8 border-2 border-[#FFC107] bg-[#FFFBF0] rounded-sm">
+      <div className="text-[#141718] italic font-medium">
+        {children}
+      </div>
+    </div>
+  ),
+  Row: ({ children }: any) => (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 my-8">
+      {children}
+    </div>
+  ),
 };
 
 const BlogPost = async ({
@@ -34,7 +47,6 @@ const BlogPost = async ({
   const parseId = parseInt(blogId);
   const supabase = await createClient(cookies());
 
-  // Fetch current blog
   const { data: blog, error: blogError } = await supabase
     .from("blogs")
     .select("*")
@@ -45,7 +57,6 @@ const BlogPost = async ({
     return notFound();
   }
 
-  // Fetch suggested articles (random 3 excluding current)
   const { data: suggestedData } = await supabase
     .from("blogs")
     .select("id, title, img, date")
@@ -75,14 +86,20 @@ const BlogPost = async ({
         <h1 className="text-[34px] md:text-5xl lg:text-[54px] font-medium leading-[1.1] text-[#141718]">
           {blog.title}
         </h1>
-        <div className="flex items-center gap-6 text-[#6C7275] text-xs md:text-sm font-medium pt-2">
-          <div className="flex items-center gap-2">
-            <FiUser size={18} />
+        <div className="flex items-center gap-6 text-[#6C7275] text-[14px] font-medium pt-2">
+          <div className="flex items-center gap-1.5">
+            <FiUser size={18} className="text-[#6C7275]" />
             <span>{blog.author || "admin"}</span>
           </div>
           <div className="flex items-center gap-2">
-            <FiCalendar size={18} />
-            <span>{blog.date}</span>
+            <FiCalendar size={18} className="text-[#6C7275]" />
+            <span>
+              {new Date(blog.date).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </span>
           </div>
         </div>
       </div>

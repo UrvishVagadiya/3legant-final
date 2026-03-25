@@ -63,23 +63,40 @@ export async function GET(req: NextRequest) {
             };
         });
 
-        // If order doesn't exist yet, create it now (webhook may not have fired)
-        if (!payment && userId) {
-            const orderCode = `#${Date.now().toString().slice(-10)}`;
-            let subtotal = parseFloat(meta.subtotal || "0");
-            let shippingCost = parseFloat(meta.shipping_cost || "0");
-            let discountAmount = parseFloat(meta.discount || "0");
-            let total = parseFloat(meta.total || "0");
+        const orderIdFromMeta = meta.order_id;
+        let existingOrder = null;
+        if (orderIdFromMeta) {
+            const { data } = await admin.from("orders").select("*").eq("id", orderIdFromMeta).maybeSingle();
+            existingOrder = data;
+        }
 
-            // Backend Robustness: If total is 0, recalculate from items
+        // 1. Handle Order Status Update (or creation if fallback)
+        let finalOrder = existingOrder;
+        let subtotal = parseFloat(meta.subtotal || "0");
+        let shippingCost = parseFloat(meta.shipping_cost || "0");
+        let discountAmount = parseFloat(meta.discount || "0");
+        let total = parseFloat(meta.total || "0");
+        const orderCode = existingOrder?.order_code || `#${Date.now().toString().slice(-10)}`;
+
+        if (existingOrder) {
+            // Update existing pending order to confirmed
+            const { error: updateError } = await admin
+                .from("orders")
+                .update({ 
+                    status: "confirmed", 
+                    updated_at: new Date().toISOString() 
+                })
+                .eq("id", existingOrder.id);
+            
+            if (updateError) console.error("Failed to update order status:", updateError);
+        } else if (userId) {
+            // Fallback: Create order if somehow it wasn't pre-created
             if (total === 0 && fullItems.length > 0) {
                 subtotal = fullItems.reduce((acc: number, item: any) => acc + (Number(item.price) * item.quantity), 0);
                 total = subtotal + shippingCost - discountAmount;
             }
 
-            // Create order
-            const hasDifferentBilling = meta.has_different_billing === "true";
-            const { data: order, error: orderError } = await admin
+            const { data: createdOrder, error: createError } = await admin
                 .from("orders")
                 .insert({
                     order_code: orderCode,
@@ -101,90 +118,51 @@ export async function GET(req: NextRequest) {
                     shipping_state: meta.shipping_state || "",
                     shipping_zip_code: meta.shipping_zip_code || "",
                     shipping_country: meta.shipping_country || "",
-                    has_different_billing: hasDifferentBilling,
-                    ...(hasDifferentBilling
-                        ? {
-                            billing_first_name: meta.billing_first_name || null,
-                            billing_last_name: meta.billing_last_name || null,
-                            billing_phone: meta.billing_phone || null,
-                            billing_street_address: meta.billing_street_address || null,
-                            billing_city: meta.billing_city || null,
-                            billing_state: meta.billing_state || null,
-                            billing_zip_code: meta.billing_zip_code || null,
-                            billing_country: meta.billing_country || null,
-                        }
-                        : {}),
+                    has_different_billing: meta.has_different_billing === "true",
                 })
                 .select()
                 .single();
-
-            if (orderError) {
-                console.error("Failed to create order:", orderError);
-                return NextResponse.json({
-                    items: fullItems,
-                    subtotal,
-                    discount: discountAmount,
-                    total,
-                    paymentMethod: "Credit Card (Stripe)",
-                    orderCode: `#${Date.now().toString().slice(-10)}`,
-                    date: new Date().toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                    }),
-                    cardLast4: null,
-                    cardBrand: null,
-                });
+            
+            if (!createError) {
+                finalOrder = createdOrder;
+                // Create order items for the new order
+                const dbItems = fullItems.map((item: any) => ({
+                    order_id: createdOrder.id,
+                    product_id: item.id,
+                    product_name: item.name,
+                    product_image: item.image,
+                    color: item.color,
+                    quantity: item.quantity,
+                    unit_price: Number(item.price),
+                    total_price: Number(item.price) * item.quantity,
+                }));
+                await admin.from("order_items").insert(dbItems);
             }
+        }
 
-            // Create order items
-            if (fullItems.length > 0) {
-                const orderItems = fullItems.map(
-                    (item: any) => ({
-                        order_id: order.id,
-                        product_id: item.id,
-                        product_name: item.name,
-                        product_image: item.image,
-                        color: item.color,
-                        quantity: item.quantity,
-                        unit_price: Number(item.price),
-                        total_price: Number(item.price) * item.quantity,
-                    })
-                );
+        if (!finalOrder) {
+             return NextResponse.json({ error: "Order context lost" }, { status: 500 });
+        }
 
-                const { error: itemsError } = await admin
-                    .from("order_items")
-                    .insert(orderItems);
+        // 2. Create or Update payment record
+        const { data: existingPayment } = await admin.from("payments").select("id").eq("order_id", finalOrder.id).maybeSingle();
+        
+        let cardLast4: string | null = null;
+        let cardBrand: string | null = null;
 
-                if (itemsError) {
-                    console.error("Failed to create order items:", itemsError);
+        if (paymentIntentId) {
+            try {
+                const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, { expand: ["payment_method"] });
+                const pm = paymentIntent.payment_method as Stripe.PaymentMethod;
+                if (pm?.card) {
+                    cardLast4 = pm.card.last4;
+                    cardBrand = pm.card.brand;
                 }
+            } catch (err) {
+                console.error("Failed to retrieve payment method details:", err);
             }
 
-            // Get card details from Stripe
-            let cardLast4: string | null = null;
-            let cardBrand: string | null = null;
-
-            if (paymentIntentId) {
-                try {
-                    const paymentIntent = await stripe.paymentIntents.retrieve(
-                        paymentIntentId,
-                        { expand: ["payment_method"] }
-                    );
-                    const pm = paymentIntent.payment_method as Stripe.PaymentMethod;
-                    if (pm?.card) {
-                        cardLast4 = pm.card.last4;
-                        cardBrand = pm.card.brand;
-                    }
-                } catch (err) {
-                    console.error("Failed to retrieve payment method details:", err);
-                }
-            }
-
-            // Create payment record
-            const { error: paymentError } = await admin.from("payments").insert({
-                order_id: order.id,
-                user_id: userId,
+            const paymentData = {
                 payment_method: "card",
                 status: "completed",
                 amount: total,
@@ -194,89 +172,44 @@ export async function GET(req: NextRequest) {
                 card_brand: cardBrand,
                 payment_date: new Date().toISOString(),
                 refund_amount: 0,
-                refund_date: null,
-                refund_reason: null,
-            });
+            };
 
-            if (paymentError) {
-                console.error("Failed to create payment:", paymentError);
+            if (existingPayment) {
+                await admin.from("payments").update(paymentData).eq("id", existingPayment.id);
+            } else {
+                await admin.from("payments").insert({
+                    ...paymentData,
+                    order_id: finalOrder.id,
+                    user_id: userId,
+                });
             }
-
-            // Increment coupon usage if applicable
-            if (meta.coupon_id) {
-                const { data: coupon } = await admin
-                    .from("coupons")
-                    .select("used_count")
-                    .eq("id", meta.coupon_id)
-                    .single();
-
-                if (coupon) {
-                    await admin
-                        .from("coupons")
-                        .update({ used_count: (coupon.used_count || 0) + 1 })
-                        .eq("id", meta.coupon_id);
-                }
-            }
-
-            // Clear user's cart
-            await admin.from("cart").delete().eq("user_id", userId);
-
-            return NextResponse.json({
-                items: fullItems,
-                subtotal,
-                discount: discountAmount,
-                total,
-                paymentMethod: "Credit Card (Stripe)",
-                orderCode,
-                date: new Date().toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                }),
-                cardLast4,
-                cardBrand,
-            });
         }
 
-        // Order already exists (created by webhook), return data from DB
-        const orderData = payment?.orders;
-        const orderCode = orderData
-            ? (Array.isArray(orderData)
-                ? orderData[0]?.order_code
-                : (orderData as { order_code: string }).order_code)
-            : `#${Date.now().toString().slice(-10)}`;
+        // 3. Post-processing
+        if (meta.coupon_id) {
+            const { data: coupon } = await admin.from("coupons").select("used_count").eq("id", meta.coupon_id).single();
+            if (coupon) {
+                await admin.from("coupons").update({ used_count: (coupon.used_count || 0) + 1 }).eq("id", meta.coupon_id);
+            }
+        }
 
-        const orderDate = orderData
-            ? new Date(
-                Array.isArray(orderData)
-                    ? orderData[0]?.created_at
-                    : (orderData as { created_at: string }).created_at
-            ).toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-            })
-            : new Date().toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-            });
-
-        const finalSubtotal = parseFloat(meta.subtotal || "0") || fullItems.reduce((acc: number, item: any) => acc + (Number(item.price) * item.quantity), 0);
-        const finalDiscount = parseFloat(meta.discount || "0");
-        const finalShipping = parseFloat(meta.shipping_cost || "0");
-        const finalTotal = parseFloat(meta.total || "0") || (finalSubtotal + finalShipping - finalDiscount);
+        // Clear user's cart
+        await admin.from("cart").delete().eq("user_id", userId);
 
         return NextResponse.json({
             items: fullItems,
-            subtotal: finalSubtotal,
-            discount: finalDiscount,
-            total: finalTotal,
+            subtotal,
+            discount: discountAmount,
+            total,
             paymentMethod: "Credit Card (Stripe)",
-            orderCode,
-            date: orderDate,
-            cardLast4: payment?.card_last_four || null,
-            cardBrand: payment?.card_brand || null,
+            orderCode: finalOrder.order_code,
+            date: new Date(finalOrder.created_at).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+            }),
+            cardLast4,
+            cardBrand,
         });
     } catch (error) {
         console.error("Session retrieval error:", error);

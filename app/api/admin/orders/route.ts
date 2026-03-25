@@ -23,7 +23,7 @@ export async function GET() {
 
     const ordersWithPaymentStatus = (data || []).map((order: any) => ({
         ...order,
-        payment_status: order.payments?.[0]?.status || "unknown",
+        payment_status: order.payments?.[0]?.status || (order.status === 'cancelled' ? 'failed' : "failed"),
         refund_status: order.refund_status || 'none'
     }));
 
@@ -48,6 +48,11 @@ export async function PUT(req: NextRequest) {
     const confirmedStatuses = ["confirmed", "processing", "shipped", "delivered"];
     const isNewStatusConfirmed = payload.status && confirmedStatuses.includes(payload.status.toLowerCase());
     const shouldReduceStock = isNewStatusConfirmed && currentOrder && !currentOrder.stock_reduced;
+
+    // Add delivered_at if status changed to delivered
+    if (payload.status === "delivered") {
+        payload.delivered_at = new Date().toISOString();
+    }
 
     const { data, error } = await admin
         .from("orders")
@@ -82,7 +87,7 @@ export async function PUT(req: NextRequest) {
                 if (updatedData) {
                     return NextResponse.json({
                         ...updatedData,
-                        payment_status: updatedData.payments?.[0]?.status || "unknown",
+                        payment_status: updatedData.payments?.[0]?.status || (updatedData.status === 'cancelled' ? 'failed' : "failed"),
                         refund_status: updatedData.refund_status || 'none'
                     });
                 }
@@ -96,7 +101,7 @@ export async function PUT(req: NextRequest) {
 
     const orderWithPaymentStatus = {
         ...data,
-        payment_status: data.payments?.[0]?.status || "unknown",
+        payment_status: data.payments?.[0]?.status || (data.status === 'cancelled' ? 'failed' : "failed"),
         refund_status: data.refund_status || 'none'
     };
 

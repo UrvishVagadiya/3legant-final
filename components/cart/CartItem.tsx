@@ -24,6 +24,7 @@ const CartItem = ({ item, onRemove, onUpdateQuantity, user }: CartItemProps) => 
             src={item.image}
             alt={item.name}
             fill
+            unoptimized
             className="object-contain p-2 transition-all duration-300"
             colorHex={shouldTint ? colorHex : null}
           />

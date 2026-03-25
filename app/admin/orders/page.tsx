@@ -84,6 +84,12 @@ const badgeStyles: Record<
     dot: "bg-rose-500",
     border: "border-rose-100",
   },
+  cancle: {
+    bg: "bg-rose-50",
+    text: "text-rose-700",
+    dot: "bg-rose-500",
+    border: "border-rose-100",
+  },
   refunded: {
     bg: "bg-purple-50",
     text: "text-purple-700",
