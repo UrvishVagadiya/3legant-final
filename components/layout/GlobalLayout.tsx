@@ -6,12 +6,11 @@ import Navbar from "@/components/layout/Navbar";
 import NewsLetter from "@/components/sections/NewsLetter";
 import Footer from "@/components/layout/Footer";
 import CartDrawer from "@/components/cart/CartDrawer";
-import { useStoreSync } from "@/hooks/useStoreSync";
-
+import { useAppSelector, RootState } from "@/store";
 
 const GlobalLayout = ({ children }: { children: React.ReactNode }) => {
   const pathname = usePathname();
-  useStoreSync();
+  const { user, isAuthenticated } = useAppSelector((state: RootState) => state.auth);
 
   const isAuthPage = pathname === "/signin" || pathname === "/signup";
   const isContactPage = pathname === "/contact";
@@ -35,7 +34,6 @@ const GlobalLayout = ({ children }: { children: React.ReactNode }) => {
     </>
   );
 
-  // Admin pages have their own layout
   if (isAdminPage) {
     return <>{children}</>;
   }

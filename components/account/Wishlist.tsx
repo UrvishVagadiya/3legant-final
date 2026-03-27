@@ -1,15 +1,16 @@
 "use client";
 import Image from "next/image";
 import { X } from "lucide-react";
-import { useWishlistStore } from "../../store/wishlistStore";
-import { useCartStore } from "../../store/cartStore";
-
-import { useAuth } from "@/context/AuthContext";
+import { useAppDispatch, useAppSelector, RootState } from "@/store";
+import { removeFromWishlist } from "@/store/slices/wishlistSlice";
+import { addToCart } from "@/store/slices/cartSlice";
+import { useToggleWishlistMutation } from "@/store/api/wishlistApi";
 
 const Wishlist = () => {
-  const { user } = useAuth();
-  const { items: wishlistItems, removeFromWishlist } = useWishlistStore();
-  const { addToCart } = useCartStore();
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state: RootState) => state.auth);
+  const { items: wishlistItems } = useAppSelector((state: RootState) => state.wishlist);
+  const [toggleWishlistMutation] = useToggleWishlistMutation();
 
   const formatPrice = (price: string | number) => {
     const numPrice =
@@ -17,6 +18,28 @@ const Wishlist = () => {
         ? parseFloat(price.replace(/[^0-9.]/g, ""))
         : price;
     return isNaN(numPrice) ? "0.00" : numPrice.toFixed(2);
+  };
+
+  const handleRemoveFromWishlist = (id: string | number) => {
+    dispatch(removeFromWishlist({ id }));
+    if (user) {
+      toggleWishlistMutation({ userId: user.id, productId: String(id), adding: false });
+    }
+  };
+
+  const handleAddToCart = (item: any) => {
+    dispatch(addToCart({
+      item: {
+        id: String(item.id),
+        name: item.name,
+        price: typeof item.price === "string" 
+          ? parseFloat(item.price.replace(/[^0-9.]/g, "")) 
+          : Number(item.price),
+        image: item.image,
+        color: item.color || "Default",
+        stock: item.stock,
+      }
+    }));
   };
 
   if (wishlistItems.length === 0) {
@@ -51,7 +74,7 @@ const Wishlist = () => {
               >
                 <td className="py-6 flex items-center gap-4">
                   <button
-                    onClick={() => removeFromWishlist(item.id, user)}
+                    onClick={() => handleRemoveFromWishlist(item.id)}
                     className="text-gray-400 hover:text-black transition-colors"
                   >
                     <X size={20} />
@@ -79,19 +102,7 @@ const Wishlist = () => {
                 </td>
                 <td className="py-6">
                   <button
-                    onClick={() =>
-                      addToCart({
-                        id: String(item.id),
-                        name: item.name,
-                        price:
-                          typeof item.price === "string"
-                            ? parseFloat(item.price.replace(/[^0-9.]/g, ""))
-                            : item.price,
-                        image: item.image,
-                        color: item.color || "Default",
-                        stock: item.stock,
-                      }, user)
-                    }
+                    onClick={() => handleAddToCart(item)}
                     className="bg-[#141718] text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors w-full sm:w-auto"
                   >
                     Add to cart
@@ -114,7 +125,7 @@ const Wishlist = () => {
           >
             <div className="flex items-center gap-4">
               <button
-                onClick={() => removeFromWishlist(item.id)}
+                onClick={() => handleRemoveFromWishlist(item.id)}
                 className="text-gray-400 hover:text-black transition-colors"
               >
                 <X size={20} />
@@ -141,19 +152,7 @@ const Wishlist = () => {
               </div>
             </div>
             <button
-              onClick={() =>
-                addToCart({
-                  id: String(item.id),
-                  name: item.name,
-                  price:
-                    typeof item.price === "string"
-                      ? parseFloat(item.price.replace(/[^0-9.]/g, ""))
-                      : item.price,
-                  image: item.image,
-                  color: item.color || "Default",
-                  stock: item.stock,
-                }, user)
-              }
+              onClick={() => handleAddToCart(item)}
               className="bg-[#141718] text-white px-6 py-3 mt-1 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors w-full"
             >
               Add to cart

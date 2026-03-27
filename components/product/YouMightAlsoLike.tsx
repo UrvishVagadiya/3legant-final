@@ -1,40 +1,71 @@
 "use client";
-import { useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { useAppDispatch, useAppSelector, RootState } from "@/store";
+import { addToCart } from "@/store/slices/cartSlice";
+import { useGetProductsQuery } from "@/store/api/productApi";
+import { useGetWishlistItemsQuery, useToggleWishlistMutation } from "@/store/api/wishlistApi";
+import { useGetRatingsByProductsQuery } from "@/store/api/reviewApi";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { useIsMounted } from "@/hooks/useIsMounted";
-import { useProductActions } from "@/hooks/useProductActions";
-import { useProductRatings } from "@/hooks/useProductRatings";
 import ProductCard from "@/components/ui/ProductCard";
-import { Product, useProductStore } from "@/store/productStore";
 
 export default function YouMightAlsoLike() {
-  const { products: allProducts, fetchProducts } = useProductStore();
-  const { wishlistItems } = useProductStore() as any;
-  const { handleWishlistToggle, handleAddToCart } =
-    useProductActions();
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state: RootState) => state.auth);
+  const { requireAuth } = useAuthGuard();
   const isMounted = useIsMounted();
+
+  const { data: allProducts = [] } = useGetProductsQuery();
+  const { data: wishlistItems = [] } = useGetWishlistItemsQuery(user?.id ?? '', { skip: !user?.id });
+  const [toggleWishlist] = useToggleWishlistMutation();
+
+  const productIds = useMemo(() => allProducts.map((p) => String(p.id)), [allProducts]);
+  const { data: ratingsByProduct = {} } = useGetRatingsByProductsQuery(productIds, { skip: productIds.length === 0 });
 
   const products = useMemo(() => {
     if (allProducts.length === 0) return [];
     const shuffled = [...allProducts].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, 6) as Product[];
+    return shuffled.slice(0, 6);
   }, [allProducts]);
 
-  useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+  const getRating = (productId: string | number) => {
+    return ratingsByProduct[String(productId)] || { avgRating: 0, reviewCount: 0 };
+  };
 
-  const displayProducts = useMemo(() =>
-    products.length > 0 ? products : [],
-    [products]
-  );
+  const isInWishlist = (id: string | number) => wishlistItems.some((i) => i.id == id);
 
-  const productIds = useMemo(
-    () => displayProducts.map((p: Product) => p.id),
-    [displayProducts],
-  );
-  const { getRating } = useProductRatings(productIds);
+  const handleWishlistToggle = (e: React.MouseEvent, product: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    requireAuth(async () => {
+      if (!user) return;
+      const currentlyIn = isInWishlist(product.id);
+      await toggleWishlist({
+        userId: user.id,
+        productId: String(product.id),
+        adding: !currentlyIn
+      });
+    });
+  };
+
+  const handleAddToCart = (e: React.MouseEvent, product: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    requireAuth(() => {
+      dispatch(addToCart({
+        item: {
+          id: String(product.id),
+          name: product.title || product.name || "",
+          price: product.price,
+          image: product.img || product.image_url || "/image-1.png",
+          color: Array.isArray(product.color) ? product.color[0] : (product.color || "Default"),
+          stock: Number(product.stock) || 0,
+        }
+      }));
+    });
+  };
 
   return (
     <div className="w-full mt-10 md:mt-20">
@@ -50,14 +81,14 @@ export default function YouMightAlsoLike() {
           <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
         </Link>
       </div>
-
+ 
       <div className="flex overflow-x-auto gap-4 md:gap-6 pb-4">
-        {displayProducts.map((card: Product) => (
+        {products.map((card: any) => (
           <div key={card.id} className="w-62.5 md:w-70 shrink-0">
             <ProductCard
               product={card}
               isMounted={isMounted}
-              isWishlisted={wishlistItems?.some((i: any) => i.id == card.id)}
+              isWishlisted={isInWishlist(card.id)}
               onWishlistToggle={(e) => handleWishlistToggle(e, card)}
               onAddToCart={(e) => handleAddToCart(e, card)}
               linkTo={`/product/${card.id}`}

@@ -20,10 +20,11 @@ type FormData = {
   repeatNewPassword: string;
 };
 
-import { useAuth } from "@/context/AuthContext";
+import { useAppDispatch, useAppSelector, RootState } from "@/store";
 
 const AccountContent = () => {
-  const { user } = useAuth();
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state: RootState) => state.auth);
   const [fullName, setFullName] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);

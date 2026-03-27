@@ -1,35 +1,106 @@
 "use client";
-import { useEffect } from "react";
+import React from "react";
 import { Plus, Search } from "lucide-react";
 import ProductFormModal from "@/components/admin/ProductFormModal";
-import ProductTableRow from "@/components/admin/ProductTableRow";
-import { useAdminProducts } from "@/hooks/useAdminProducts";
+import ProductTableRow, { Product } from "@/components/admin/ProductTableRow";
+import { useGetAdminProductsQuery, useAddProductMutation, useUpdateProductMutation, useDeleteProductMutation } from "@/store/api/productApi";
+import { ProductFormData, emptyProductForm } from "@/components/admin/ProductFormModal";
+import { createClient } from "@/utils/supabase/client";
+import toast from "react-hot-toast";
 
 export default function AdminProducts() {
-  const {
-    loading,
-    showForm,
-    editingId,
-    formData,
-    setFormData,
-    submitting,
-    searchQuery,
-    setSearchQuery,
-    deleting,
-    filtered,
-    fetchProducts,
-    openEditForm,
-    openAddForm,
-    handleSubmit,
-    handleDelete,
-    setShowForm,
-    setImageFiles,
-    imageFiles,
-  } = useAdminProducts();
+  const { data: products = [], isLoading: loading } = useGetAdminProductsQuery();
+  const [addProductMutation] = useAddProductMutation();
+  const [updateProductMutation] = useUpdateProductMutation();
+  const [deleteProductMutation] = useDeleteProductMutation();
+  
+  const [showFormState, setShowForm] = React.useState(false);
+  const [editingId, setEditingId] = React.useState<string | null>(null);
+  const [formData, setFormData] = React.useState<ProductFormData>(emptyProductForm);
+  const [imageFiles, setImageFiles] = React.useState<(File | null)[]>(new Array(6).fill(null));
+  const [submitting, setSubmitting] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState("");
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+  const openEditForm = (p: Product) => {
+    setEditingId(p.id);
+    setFormData({
+      title: p.title || "", price: String(p.price || ""), mrp: p.mrp ? String(p.mrp) : "",
+      category: p.category || [], isNew: p.isNew || false, description: p.description || "",
+      sku: p.sku || "", stock: String(p.stock || 0), color: p.color || [],
+      status: p.status || "active", measurements: p.measurements || "",
+      weight: p.weight || "", valid_until: p.valid_until ? p.valid_until.slice(0, 16) : "",
+    });
+    setImageFiles(new Array(6).fill(null));
+    setShowForm(true);
+  };
+
+  const openAddForm = () => {
+    setEditingId(null);
+    setFormData(emptyProductForm);
+    setImageFiles(new Array(6).fill(null));
+    setShowForm(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const supabase = createClient();
+      const imageUrls: string[] = [];
+      
+      for (let i = 0; i < imageFiles.length; i++) {
+        const file = imageFiles[i];
+        if (file) {
+          const fileName = `${Date.now()}-${i}-${file.name}`;
+          const { error: uploadError } = await supabase.storage.from("product_img").upload(fileName, file);
+          if (uploadError) throw uploadError;
+          const publicUrl = supabase.storage.from("product_img").getPublicUrl(fileName).data.publicUrl;
+          imageUrls.push(publicUrl);
+        }
+      }
+
+      const priceNum = Number(formData.price);
+      const mrpNum = formData.mrp ? Number(formData.mrp) : null;
+      const productData: any = {
+        title: formData.title, price: priceNum, category: formData.category, isNew: formData.isNew,
+        discount: mrpNum && mrpNum > priceNum ? `-${Math.round(((mrpNum - priceNum) / mrpNum) * 100)}%` : null,
+        description: formData.description || null, sku: formData.sku || null, stock: Number(formData.stock) || 0,
+        color: formData.color, status: formData.status, measurements: formData.measurements || null,
+        weight: formData.weight || null, valid_until: formData.valid_until ? new Date(formData.valid_until).toISOString() : null,
+      };
+      if (mrpNum) productData.mrp = mrpNum;
+      
+      if (imageUrls.length > 0) {
+        productData.img = imageUrls[0];
+        productData.images = imageUrls;
+      }
+
+      if (editingId) {
+        await updateProductMutation({ id: editingId, productData }).unwrap();
+      } else {
+        if (imageUrls.length === 0) { toast.error("Please select at least one image"); setSubmitting(false); return; }
+        await addProductMutation(productData).unwrap();
+      }
+      setShowForm(false);
+      setFormData(emptyProductForm);
+      setEditingId(null);
+      setImageFiles(new Array(6).fill(null));
+    } catch (err: any) {
+      console.error("Failed to save product:", err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm("Are you sure you want to delete this product?")) {
+      await deleteProductMutation(id).unwrap();
+    }
+  };
+
+  const filtered = products.filter((p) =>
+    p.title?.toLowerCase().includes(searchQuery.toLowerCase()) || p.sku?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (loading) return <div className="text-[#6C7275]">Loading products...</div>;
 
@@ -72,13 +143,13 @@ export default function AdminProducts() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((p) => (
+              {filtered.map((p: any) => (
                 <ProductTableRow
                   key={p.id}
                   product={p}
                   onEdit={openEditForm}
                   onDelete={handleDelete}
-                  deleting={deleting === p.id}
+                  deleting={false}
                 />
               ))}
               {filtered.length === 0 && (
@@ -96,7 +167,7 @@ export default function AdminProducts() {
         </div>
       </div>
 
-      {showForm && (
+      {showFormState && (
         <ProductFormModal
           formData={formData}
           setFormData={setFormData}

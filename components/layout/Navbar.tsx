@@ -5,20 +5,21 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { usePathname, useRouter } from "next/navigation";
-import { useCartStore } from "../../store/cartStore";
+import { useAppDispatch, useAppSelector, RootState } from "@/store";
+import { toggleCart } from "@/store/slices/cartSlice";
+
 import { useIsMounted } from "@/hooks/useIsMounted";
 import SearchOverlay from "./SearchOverlay";
 import MobileMenu from "./MobileMenu";
 import toast from "react-hot-toast";
 
-import { useAuth } from "@/context/AuthContext";
-
 const Navbar = () => {
-  const { user, role } = useAuth();
+  const dispatch = useAppDispatch();
+  const { user, role } = useAppSelector((state: RootState) => state.auth);
+  const { items } = useAppSelector((state: RootState) => state.cart);
   const supabase = createClient();
   const router = useRouter();
   const pathname = usePathname();
-  const { toggleCart, items } = useCartStore();
 
   const cartItemCount = items.length;
   const isMounted = useIsMounted();
@@ -26,14 +27,12 @@ const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const getInitial = () => {
-    if (user?.user_metadata.name) {
-      return user?.user_metadata.name.charAt(0).toUpperCase() || "S";
-    }
-    return "U";
+    const name = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.user_metadata?.display_name || user?.email;
+    return name?.charAt(0).toUpperCase() || "U";
   };
 
   return (
-    <div className="px-5 md:px-10 lg:px-40 py-4 md:py-5 flex items-center justify-between w-full border-b text-gray-100">
+    <div className="px-4 sm:px-5 md:px-10 lg:px-40 py-4 md:py-5 flex items-center justify-between w-full border-b text-gray-100">
       <div className="flex items-center gap-3">
         <Menu
           onClick={() => setIsMobileMenuOpen(true)}
@@ -110,7 +109,7 @@ const Navbar = () => {
               toast.error("Your cart is empty!");
               return;
             }
-            toggleCart();
+            dispatch(toggleCart());
           }}
           className="flex items-center gap-1.5 cursor-pointer group transition-all duration-300 ease-in-out"
         >

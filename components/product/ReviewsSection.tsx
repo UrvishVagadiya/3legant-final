@@ -1,17 +1,19 @@
 "use client";
 import { useEffect, useState } from "react";
-import { create } from "zustand";
-import { createClient } from "@/utils/supabase/client";
+import { useAppDispatch, useAppSelector, RootState } from "@/store";
+import {
+  useGetReviewsQuery,
+  useAddReviewMutation,
+  useUpdateReviewMutation,
+  useDeleteReviewMutation,
+  useToggleLikeReviewMutation,
+  useAddReplyMutation
+} from "@/store/api/reviewApi";
 import toast from "react-hot-toast";
 import { IoMdStar, IoMdStarOutline } from "react-icons/io";
 import { X, Edit2, Trash2 } from "lucide-react";
 import { AiOutlineHeart, AiFillHeart } from "react-icons/ai";
 import { BsReply } from "react-icons/bs";
-import { useAuth } from "@/context/AuthContext";
-
-import { useReviewStore } from "@/store/reviewStore";
-
-const supabase = createClient();
 
 export const Stars = ({ count, size = "text-[14px]" }: { count: number; size?: string }) => (
   <div className={`flex text-[#141718] ${size}`}>
@@ -121,19 +123,17 @@ export function ReviewCard({ review, currentUserId, onToggleLike, onEdit, onDele
 }
 
 export default function ReviewsSection({ productId, productName }: { productId: string; productName: string }) {
-  const { user } = useAuth();
-  const { 
-    reviewsByProduct, 
-    fetchReviews, 
-    addReview, 
-    updateReview, 
-    deleteReview, 
-    toggleLike, 
-    addReply, 
-    loading 
-  } = useReviewStore();
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state: RootState) => state.auth);
   
-  const reviews = reviewsByProduct[productId] || [];
+  const { data: reviews = [], isLoading: loadingReviews } = useGetReviewsQuery({ productId, userId: user?.id });
+  const [addReviewMutation, { isLoading: isAdding }] = useAddReviewMutation();
+  const [updateReviewMutation, { isLoading: isUpdating }] = useUpdateReviewMutation();
+  const [deleteReviewMutation] = useDeleteReviewMutation();
+  const [toggleLikeMutation] = useToggleLikeReviewMutation();
+  const [addReplyMutation] = useAddReplyMutation();
+
+  const loading = loadingReviews || isAdding || isUpdating;
   const userReview = reviews.find((r: any) => r.user_id === user?.id) || null;
 
   const [showForm, setShowForm] = useState(false);
@@ -142,9 +142,6 @@ export default function ReviewsSection({ productId, productName }: { productId: 
   const [rating, setRating] = useState(5);
   const [sortOption, setSortOption] = useState("Newest");
 
-  useEffect(() => {
-    fetchReviews(productId, user?.id);
-  }, [productId, user?.id, fetchReviews]);
 
   const handleEdit = () => {
     if (!userReview) return;
@@ -190,13 +187,19 @@ export default function ReviewsSection({ productId, productName }: { productId: 
           onClose={() => setShowForm(false)}
           onSubmit={async () => {
             if (!user) return toast.error("Please sign in");
-            if (isEditing && userReview) {
-              await updateReview(productId, userReview.id, rating, text);
-            } else {
-              const name = user.user_metadata?.full_name || user.email?.split("@")[0] || "Anonymous";
-              await addReview(productId, user.id, name, rating, text);
+            try {
+              if (isEditing && userReview) {
+                await updateReviewMutation({ productId, reviewId: userReview.id, rating, review: text }).unwrap();
+                toast.success("Review updated!");
+              } else {
+                const name = user.user_metadata?.full_name || user.email?.split("@")[0] || "Anonymous";
+                await addReviewMutation({ productId, userId: user.id, userName: name, rating, review: text }).unwrap();
+                toast.success("Review submitted!");
+              }
+              setShowForm(false); setIsEditing(false); setText(""); setRating(5);
+            } catch (err: any) {
+              toast.error(err.data?.message || err.error || "Failed to process review");
             }
-            setShowForm(false); setIsEditing(false); setText(""); setRating(5);
           }}
         />
       )}
@@ -220,9 +223,28 @@ export default function ReviewsSection({ productId, productName }: { productId: 
           sortedReviews.map(review => (
             <ReviewCard
               key={review.id} review={review} currentUserId={user?.id}
-              onToggleLike={() => user ? toggleLike(productId, review.id, user.id) : toast.error("Please sign in")}
-              onEdit={handleEdit} onDelete={() => deleteReview(productId, review.id, user!.id)}
-              onSubmitReply={(reply: string) => user ? addReply(productId, review.id, user.id, user.user_metadata?.full_name || "Anonymous", reply) : toast.error("Please sign in")}
+              onToggleLike={() => user ? toggleLikeMutation({ productId, reviewId: review.id, userId: user.id, liked: !!review.liked }) : toast.error("Please sign in")}
+              onEdit={handleEdit} 
+              onDelete={async () => {
+                if (!user) return;
+                if (confirm("Are you sure you want to delete this review?")) {
+                  try {
+                    await deleteReviewMutation({ productId, reviewId: review.id, userId: user.id }).unwrap();
+                    toast.success("Review deleted");
+                  } catch (err) {
+                    toast.error("Failed to delete review");
+                  }
+                }
+              }}
+              onSubmitReply={async (reply: string) => {
+                if (!user) return toast.error("Please sign in");
+                try {
+                  await addReplyMutation({ productId, reviewId: review.id, userId: user.id, userName: user.user_metadata?.full_name || "Anonymous", reply }).unwrap();
+                  toast.success("Reply posted!");
+                } catch (err) {
+                  toast.error("Failed to post reply");
+                }
+              }}
             />
           ))
         )}

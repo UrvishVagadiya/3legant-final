@@ -30,7 +30,7 @@ const navItems = [
 ];
 
 
-import { useAuth } from "@/context/AuthContext";
+import { useAppDispatch, useAppSelector, RootState } from "@/store";
 
 export default function AdminLayout({
   children,
@@ -39,7 +39,8 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, role, loading: authLoading } = useAuth();
+  const dispatch = useAppDispatch();
+  const { user, role, loading: authLoading } = useAppSelector((state: RootState) => state.auth);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);

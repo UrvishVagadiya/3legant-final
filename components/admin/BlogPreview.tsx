@@ -78,13 +78,13 @@ export default function BlogPreview({ data, imagePreview, onBack }: Props) {
           {/* Note: Real MDX rendering in preview is tricky without a heavy runtime. 
               We'll just show the raw text or a simple placeholder if it's too complex, 
               but since we asked for "same to same", we'll try to use a simple approach. */}
-           <div className="whitespace-pre-wrap font-sans opacity-60 italic mb-10 border-l-4 border-gray-200 pl-4 py-2">
-             Note: Preview uses internal MDX styles but renders raw content for speed. 
-             HTML tags and Markdown syntax will be visible here but fully rendered in the live post.
-           </div>
-           <div className="prose prose-lg max-w-none">
-             {data.content?.substring(0, 160)}...
-           </div>
+          <div className="whitespace-pre-wrap font-sans opacity-60 italic mb-10 border-l-4 border-gray-200 pl-4 py-2">
+            Note: Preview uses internal MDX styles but renders raw content for speed.
+            HTML tags and Markdown syntax will be visible here but fully rendered in the live post.
+          </div>
+          <div className="prose prose-lg max-w-none">
+            {data.content?.substring(0, 160)}...
+          </div>
         </div>
       </div>
     </div>

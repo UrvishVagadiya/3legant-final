@@ -5,28 +5,35 @@ import CheckoutStepper from "@/components/sections/CheckoutStepper";
 import CartItem from "@/components/cart/CartItem";
 import CartSummary from "@/components/cart/CartSummary";
 import CouponSuggestions from "@/components/cart/CouponSuggestions";
-import { useCartStore } from "@/store/cartStore";
+import { useAppDispatch, useAppSelector, RootState } from "@/store";
+import { removeFromCart, updateQuantity, setShippingMethod } from "@/store/slices/cartSlice";
 import { useIsMounted } from "@/hooks/useIsMounted";
 import { getShippingCost } from "@/utils/getShippingCost";
 import { validateCoupon } from "@/utils/coupon";
 import toast from "react-hot-toast";
 
-import { useAuth } from "@/context/AuthContext";
-
 const Cart = () => {
-  const { user } = useAuth();
-  const {
-    items,
-    removeFromCart,
-    updateQuantity,
-    shippingMethod,
-    setShippingMethod,
-  } = useCartStore();
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state: RootState) => state.auth);
+  const { items, shippingMethod } = useAppSelector((state: RootState) => state.cart);
+  
   const isMounted = useIsMounted();
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
   const [discount, setDiscount] = useState(0);
   const [couponLoading, setCouponLoading] = useState(false);
+
+  const handleRemoveItem = (id: string, color: string) => {
+    dispatch(removeFromCart({ id, color }));
+  };
+
+  const handleUpdateQuantity = (id: string, color: string, quantity: number) => {
+    dispatch(updateQuantity({ id, color, quantity }));
+  };
+
+  const handleSetShippingMethod = (method: string) => {
+    dispatch(setShippingMethod(method));
+  };
 
   const subtotal = items.reduce(
     (acc, curr) => acc + Number(curr.price) * curr.quantity,
@@ -71,9 +78,8 @@ const Cart = () => {
             <CartItem
               key={`${item.id}-${item.color}`}
               item={item}
-              onRemove={removeFromCart}
-              onUpdateQuantity={updateQuantity}
-              user={user}
+              onRemove={handleRemoveItem}
+              onUpdateQuantity={handleUpdateQuantity}
             />
           ))}
 
@@ -132,7 +138,7 @@ const Cart = () => {
           subtotal={subtotal}
           total={total}
           shippingMethod={shippingMethod}
-          setShippingMethod={setShippingMethod}
+          setShippingMethod={handleSetShippingMethod}
           hasItems={items.length > 0}
         />
       </div>

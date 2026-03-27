@@ -4,10 +4,10 @@ import Link from "next/link";
 import { Blog } from "@/types/blog";
 
 interface Props {
-  blog: Blog;
-  onEdit: (b: Blog) => void;
-  onDelete: (id: number) => void;
-  deleting: boolean;
+    blog: Blog;
+    onEdit: (b: Blog) => void;
+    onDelete: (id: number) => void;
+    deleting: boolean;
 }
 
 export default function BlogTableRow({ blog, onEdit, onDelete, deleting }: Props) {
@@ -16,9 +16,9 @@ export default function BlogTableRow({ blog, onEdit, onDelete, deleting }: Props
             <td className="px-6 py-4">
                 <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
-                        <img 
-                            src={blog.img} 
-                            alt={blog.title} 
+                        <img
+                            src={blog.img}
+                            alt={blog.title}
                             className="w-full h-full object-cover"
                         />
                     </div>
@@ -32,7 +32,7 @@ export default function BlogTableRow({ blog, onEdit, onDelete, deleting }: Props
             </td>
             <td className="px-6 py-4">
                 <span className="px-2.5 py-1 bg-gray-100 text-[#141718] rounded-full text-[11px] font-medium uppercase">
-                    {blog.author}
+                    {blog.author || "admin"}
                 </span>
             </td>
             <td className="px-6 py-4 text-[#6C7275]">
@@ -44,7 +44,7 @@ export default function BlogTableRow({ blog, onEdit, onDelete, deleting }: Props
             </td>
             <td className="px-6 py-4">
                 <div className="flex items-center gap-2">
-                    <Link 
+                    <Link
                         href={`/blogs/${blog.id}`}
                         target="_blank"
                         className="p-2 text-[#6C7275] hover:text-[#141718] hover:bg-gray-100 rounded-lg transition-colors"

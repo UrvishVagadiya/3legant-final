@@ -3,7 +3,9 @@
 import { Search } from "lucide-react";
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useProductSearch } from "@/hooks/useProductSearch";
+import { useAppDispatch, useAppSelector, RootState } from "@/store";
+import { useSearchProductsQuery } from "@/store/api/productApi";
+import { setSearchQuery } from "@/store/slices/productSlice";
 import { colorMap } from "../product/ColorSelector";
 import TintedProductImage from "../product/TintedProductImage";
 
@@ -12,22 +14,24 @@ interface MobileSearchProps {
 }
 
 const MobileSearch = ({ onResultClick }: MobileSearchProps) => {
-  const {
-    query: searchQuery,
-    results: searchResults,
-    loading: searchLoading,
-    handleSearchChange,
-  } = useProductSearch(5);
+  const dispatch = useAppDispatch();
+  const { searchQuery } = useAppSelector((state: RootState) => state.product);
+
   const [showResults, setShowResults] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
+  const { data: searchResults = [], isFetching: searchLoading } = useSearchProductsQuery(searchQuery, {
+    skip: !searchQuery.trim(),
+  });
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleSearchChange(e.target.value);
-    setShowResults(!!e.target.value.trim());
+    const value = e.target.value;
+    dispatch(setSearchQuery(value));
+    setShowResults(!!value.trim());
   };
 
-  const handleClick = (productId: number) => {
+  const handleClick = (productId: any) => {
     onResultClick();
     router.push(`/product?id=${productId}`);
   };

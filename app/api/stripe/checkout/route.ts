@@ -83,30 +83,36 @@ export async function POST(req: NextRequest) {
         const origin = req.headers.get("origin") || "http://localhost:3000";
 
         // Create order in 'pending' status
-        const orderCode = `#${Date.now().toString().slice(-10)}`;
+        const randomStr = Math.random().toString(36).substring(2, 7).toUpperCase();
+        const orderCode = `#${Date.now().toString().slice(-6)}${randomStr}`;
+        
+        const safeSubtotal = Number(subtotal) || 0;
+        const safeShippingCost = Number(shippingCost) || 0;
+        const safeDiscount = Number(discount) || 0;
+        const safeTotal = Number(total) || 0;
+
         const { data: order, error: orderError } = await supabase
             .from("orders")
             .insert({
                 order_code: orderCode,
                 user_id: user.id,
                 status: "pending",
-                subtotal,
-                shipping_cost: shippingCost,
-                discount,
-                tax: 0,
-                total,
+                subtotal: safeSubtotal,
+                shipping_cost: safeShippingCost,
+                discount: safeDiscount,
+                total: safeTotal,
                 shipping_method: shippingMethod,
                 coupon_code: couponCode || null,
-                shipping_first_name: shippingInfo.firstName,
-                shipping_last_name: shippingInfo.lastName,
-                shipping_phone: shippingInfo.phone,
-                shipping_email: shippingInfo.email,
-                shipping_street_address: shippingInfo.streetAddress,
-                shipping_city: shippingInfo.city,
-                shipping_state: shippingInfo.state,
-                shipping_zip_code: shippingInfo.zipCode,
-                shipping_country: shippingInfo.country,
-                has_different_billing: useDifferentBilling,
+                shipping_first_name: shippingInfo.firstName || "N/A",
+                shipping_last_name: shippingInfo.lastName || "N/A",
+                shipping_phone: shippingInfo.phone || "N/A",
+                shipping_email: shippingInfo.email || user.email,
+                shipping_street_address: shippingInfo.streetAddress || "N/A",
+                shipping_city: shippingInfo.city || "N/A",
+                shipping_state: shippingInfo.state || "N/A",
+                shipping_zip_code: shippingInfo.zipCode || "N/A",
+                shipping_country: shippingInfo.country || "N/A",
+                has_different_billing: !!useDifferentBilling,
                 ...(useDifferentBilling && billingInfo
                     ? {
                         billing_first_name: billingInfo.firstName,
@@ -125,7 +131,10 @@ export async function POST(req: NextRequest) {
 
         if (orderError) {
             console.error("Failed to create pending order:", orderError);
-            return NextResponse.json({ error: "Failed to create order" }, { status: 500 });
+            return NextResponse.json({ 
+                error: `Failed to create order: ${orderError.message}`,
+                details: orderError 
+            }, { status: 500 });
         }
 
         // Create order items
@@ -146,10 +155,28 @@ export async function POST(req: NextRequest) {
 
         if (itemsError) {
             console.error("Failed to create order items:", itemsError);
-            // We don't return error here because the order already exists, but it's not ideal
+        } else {
+            // REDUCE STOCK (Reserve items immediately on checkout start)
+            const stockItems = items.map((item: any) => ({
+                product_id: item.id,
+                quantity: item.quantity
+            }));
+
+            const { error: stockError } = await supabase.rpc("reduce_product_stock", {
+                items: stockItems
+            });
+
+            if (!stockError) {
+                await supabase
+                    .from("orders")
+                    .update({ stock_reduced: true })
+                    .eq("id", order.id);
+                console.log("Successfully reserved stock for pending order");
+            } else {
+                console.error("Failed to reserve stock:", stockError);
+            }
         }
 
-        // Create initial pending payment record
         const { error: paymentError } = await supabase
             .from("payments")
             .insert({
@@ -173,7 +200,7 @@ export async function POST(req: NextRequest) {
             ...(discounts.length > 0 ? { discounts } : {}),
             customer_email: user.email,
             metadata: {
-                order_id: order.id, // CRITICAL: Link Stripe session to our order
+                order_id: order.id, 
                 user_id: user.id,
                 shipping_first_name: shippingInfo.firstName,
                 shipping_last_name: shippingInfo.lastName,

@@ -1,24 +1,28 @@
 "use client";
 import { useIsMounted } from "@/hooks/useIsMounted";
-import { useProductActions } from "@/hooks/useProductActions";
-import { useProductRatings } from "@/hooks/useProductRatings";
-import { useMemo } from "react";
+import { useAppDispatch, useAppSelector, RootState } from "@/store";
+import { useGetRatingsByProductsQuery } from "@/store/api/reviewApi";
+import { useToggleWishlistMutation } from "@/store/api/wishlistApi";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
+import { addToCart } from "@/store/slices/cartSlice";
+import { addToWishlist, removeFromWishlist } from "@/store/slices/wishlistSlice";
+import { useMemo, useEffect } from "react";
 import ShopProductCard from "./ShopProductCard";
-
-import { Product } from "@/store/productStore";
+import ShopProductSkeleton from "./ShopProductSkeleton";
 
 interface ShopProductGridProps {
-  products: Product[];
+  products: any[];
   viewGrid: number;
   mobileViewGrid?: number;
   visibleCount: number;
   setVisibleCount: (count: number | ((prev: number) => number)) => void;
   isSidebarOpen?: boolean;
+  isLoading?: boolean;
 }
 
 const mobileGridClasses: Record<number, string> = {
   1: "grid-cols-1",
-  2: "grid-cols-2",
+  2: "grid-cols-1 min-[400px]:grid-cols-2",
 };
 const desktopGridClasses: Record<number, string> = {
   1: "lg:grid-cols-1",
@@ -33,17 +37,80 @@ const ShopProductGrid = ({
   mobileViewGrid = 2,
   visibleCount,
   setVisibleCount,
+  isLoading,
 }: ShopProductGridProps) => {
-  const { handleWishlistToggle, handleAddToCart, wishlistItems, isInWishlist } =
-    useProductActions();
+  const dispatch = useAppDispatch();
   const isMounted = useIsMounted();
+  const { user } = useAppSelector((state: RootState) => state.auth);
+  const { items: wishlistItems } = useAppSelector((state: RootState) => state.wishlist);
+  const { requireAuth } = useAuthGuard();
+  const [toggleWishlistMutation] = useToggleWishlistMutation();
+
   const productIds = useMemo(() => products.map((p) => p.id), [products]);
-  const { getRating } = useProductRatings(productIds);
+  const { data: ratingsByProduct = {} } = useGetRatingsByProductsQuery(productIds, { skip: productIds.length === 0 });
+
+  const getRating = (id: number | string) => ratingsByProduct[String(id)] || { avgRating: 0, reviewCount: 0 };
+  const isInWishlist = (id: number | string) => wishlistItems.some((i) => i.id == id);
+
+  const handleWishlistToggle = (e: React.MouseEvent, card: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    requireAuth(() => {
+      const isAdding = !isInWishlist(card.id);
+      if (!isAdding) {
+        dispatch(removeFromWishlist({ id: card.id }));
+      } else {
+        dispatch(addToWishlist({
+          item: {
+            id: card.id,
+            name: card.title || card.name || "",
+            price: card.price,
+            MRP: card.mrp || card.MRP || card.old_price || card.oldprice || 0,
+            image: card.img || card.image_url || "/image-1.png",
+            color: Array.isArray(card.color) ? card.color[0] : (card.color || "Default"),
+            stock: Number(card.stock) || 0,
+          }
+        }));
+      }
+
+      if (user) {
+        toggleWishlistMutation({ userId: user.id, productId: String(card.id), adding: isAdding });
+      }
+    });
+  };
+
+  const handleAddToCart = (e: React.MouseEvent, card: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    requireAuth(() => {
+      dispatch(addToCart({
+        item: {
+          id: String(card.id),
+          name: card.title || card.name || "",
+          price: card.price,
+          image: card.img || card.image_url || "/image-1.png",
+          color: Array.isArray(card.color) ? card.color[0] : (card.color || "Default"),
+          stock: Number(card.stock) || 0,
+        }
+      }));
+    });
+  };
+
+  if (isLoading) {
+    const gridClass = `${mobileGridClasses[mobileViewGrid] || "grid-cols-2"} ${desktopGridClasses[viewGrid] || "lg:grid-cols-4"}`;
+    return (
+      <div className={`grid gap-4 md:gap-6 pb-4 ${gridClass}`}>
+        {Array.from({ length: 8 }).map((_, i) => (
+          <ShopProductSkeleton key={i} viewGrid={viewGrid} />
+        ))}
+      </div>
+    );
+  }
 
   if (products.length === 0) {
     return (
       <div className="flex justify-center items-center py-20 text-[#6C7275]">
-        <p>No products found tracking these filters.</p>
+        <p>No products found matching these filters.</p>
       </div>
     );
   }

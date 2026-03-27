@@ -1,38 +1,117 @@
 "use client";
-import React, { useEffect } from "react";
+import React from "react";
 import { Plus, Search, FileText } from "lucide-react";
 import BlogFormModal from "@/components/admin/BlogFormModal";
 import BlogTableRow from "@/components/admin/BlogTableRow";
-import { useAdminBlogs } from "@/hooks/useAdminBlogs";
+import { useGetBlogsQuery, useAddBlogMutation, useUpdateBlogMutation, useDeleteBlogMutation } from "@/store/api/blogApi";
+import { BlogFormData, emptyBlogForm, Blog } from "@/types/blog";
+import { createClient } from "@/utils/supabase/client";
+import toast from "react-hot-toast";
 
 export default function AdminBlogs() {
-  const {
-    loading,
-    showForm,
-    isPreview,
-    setIsPreview,
-    editingId,
-    formData,
-    setFormData,
-    submitting,
-    searchQuery,
-    setSearchQuery,
-    deleting,
-    filtered,
-    fetchBlogs,
-    openEditForm,
-    openAddForm,
-    handleSubmit,
-    handleDelete,
-    setShowForm,
-    handleImageChange,
-    imageFile,
-    previewUrl,
-  } = useAdminBlogs();
+  const { data: blogs = [], isLoading: loading } = useGetBlogsQuery();
+  const [addBlogMutation] = useAddBlogMutation();
+  const [updateBlogMutation] = useUpdateBlogMutation();
+  const [deleteBlogMutation] = useDeleteBlogMutation();
+  
+  const [showForm, setShowForm] = React.useState(false);
+  const [isPreview, setIsPreview] = React.useState(false);
+  const [editingId, setEditingId] = React.useState<number | null>(null);
+  const [formData, setFormData] = React.useState<BlogFormData>(emptyBlogForm);
+  const [imageFile, setImageFile] = React.useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
+  const [submitting, setSubmitting] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState("");
 
-  useEffect(() => {
-    fetchBlogs();
-  }, []);
+  const openEditForm = (b: Blog) => {
+    setEditingId(b.id);
+    setFormData({
+      title: b.title || "",
+      author: b.author || "admin",
+      date: b.date || new Date().toISOString(),
+      content: b.content || "",
+    });
+    setImageFile(null);
+    setPreviewUrl(b.img);
+    setIsPreview(false);
+    setShowForm(true);
+  };
+
+  const openAddForm = () => {
+    setEditingId(null);
+    setFormData(emptyBlogForm);
+    setImageFile(null);
+    setPreviewUrl(null);
+    setIsPreview(false);
+    setShowForm(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      const supabase = createClient();
+      let imageUrl = editingId ? blogs.find(b => b.id === editingId)?.img : "";
+      
+      if (imageFile) {
+        const fileName = `blog-${Date.now()}-${imageFile.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from("product_img")
+          .upload(fileName, imageFile);
+        
+        if (uploadError) throw uploadError;
+        
+        imageUrl = supabase.storage
+          .from("product_img")
+          .getPublicUrl(fileName).data.publicUrl;
+      }
+
+      if (!editingId && !imageUrl) {
+        toast.error("Please upload an image");
+        setSubmitting(false);
+        return;
+      }
+
+      const blogData = {
+        ...formData,
+        img: imageUrl,
+      };
+
+      if (editingId) {
+        await updateBlogMutation({ id: editingId, updates: blogData }).unwrap();
+      } else {
+        await addBlogMutation(blogData).unwrap();
+      }
+
+      setShowForm(false);
+      setFormData(emptyBlogForm);
+      setEditingId(null);
+      setImageFile(null);
+    } catch (err: any) {
+      console.error("Failed to save blog:", err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (confirm("Are you sure you want to delete this blog?")) {
+      await deleteBlogMutation(id).unwrap();
+    }
+  };
+
+  const handleImageChange = (file: File | null) => {
+    setImageFile(file);
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+    }
+  };
+
+  const filtered = blogs.filter((b) =>
+    b.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    b.author?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (loading) return <div className="text-[#6C7275]">Loading blogs...</div>;
 
@@ -81,7 +160,7 @@ export default function AdminBlogs() {
                   blog={b}
                   onEdit={openEditForm}
                   onDelete={handleDelete}
-                  deleting={deleting === b.id}
+                  deleting={false}
                 />
               ))}
               {filtered.length === 0 && (

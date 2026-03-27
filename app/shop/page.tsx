@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { useAppDispatch, useAppSelector, RootState } from "@/store";
+import { setFilters } from "@/store/slices/productSlice";
+import { useGetProductsQuery } from "@/store/api/productApi";
 import { BsGrid3X3GapFill, BsGridFill } from "react-icons/bs";
 import { PiColumnsFill, PiRowsFill } from "react-icons/pi";
 import ShopHeader from "@/components/layout/ShopHeader";
@@ -10,7 +13,6 @@ import FilterDropdown from "@/components/shop/FilterDropdown";
 import SortByMenu from "@/components/shop/SortByMenu";
 import GridIconBar from "@/components/shop/GridIconBar";
 import MobileShopFilters from "@/components/shop/MobileShopFilters";
-import { useShopFilters } from "@/hooks/useShopFilters";
 import { categories, priceRanges } from "@/constants/shopFilters";
 
 const desktopIcons = [
@@ -25,29 +27,58 @@ const mobileIcons = [
 ];
 
 const Shop = () => {
-  const {
-    filtered,
-    selectedCategory,
-    setSelectedCategory,
-    selectedPrices,
-    handlePriceChange,
-    sortOption,
-    setSortOption,
-    openDropdown,
-    setOpenDropdown,
-    isMobileFilterOpen,
-    setIsMobileFilterOpen,
-    toggleDropdown,
-    handleCategorySelect,
-    handlePriceSelect,
-    categoryItems,
-    priceItems,
-    priceDisplay,
-  } = useShopFilters();
+  const dispatch = useAppDispatch();
+  const { selectedCategory, selectedPrices, sortOption } = useAppSelector((state: RootState) => state.product);
+  const { data: products = [], isLoading, error } = useGetProductsQuery();
 
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [viewGrid, setViewGrid] = useState(3);
   const [mobileViewGrid, setMobileViewGrid] = useState(2);
   const [visibleCount, setVisibleCount] = useState(9);
+
+  const handlePriceChange = (priceLabel: string) => {
+    let updated: string[];
+    if (priceLabel === "All Price") {
+      updated = ["All Price"];
+    } else {
+      const n = selectedPrices.filter((p) => p !== "All Price");
+      updated = n.includes(priceLabel) ? n.filter((p) => p !== priceLabel) : [...n, priceLabel];
+      if (updated.length === 0) updated = ["All Price"];
+    }
+    dispatch(setFilters({ prices: updated }));
+  };
+
+  const toggleDropdown = (name: string) => setOpenDropdown((p) => (p === name ? null : name));
+  const handleCategorySelect = (cat: string) => {
+    dispatch(setFilters({ category: cat }));
+    setOpenDropdown(null);
+  };
+  const handlePriceSelect = (label: string) => {
+    handlePriceChange(label);
+    if (label === "All Price") setOpenDropdown(null);
+  };
+  const handleSortChange = (sort: string) => dispatch(setFilters({ sort }));
+
+  const filtered = useMemo(() => {
+    let r = [...products];
+    if (selectedCategory !== "All Rooms") {
+      r = r.filter((p) => Array.isArray(p.category) ? p.category.includes(selectedCategory) : p.category === selectedCategory);
+    }
+    if (!selectedPrices.includes("All Price")) {
+      const ranges = priceRanges.filter((rr) => selectedPrices.includes(rr.label));
+      r = r.filter((p) => ranges.some((rr) => p.price >= rr.min && p.price <= rr.max));
+    }
+    if (sortOption === "az") r.sort((a, b) => a.title.localeCompare(b.title));
+    else if (sortOption === "za") r.sort((a, b) => b.title.localeCompare(a.title));
+    else if (sortOption === "price-low-high") r.sort((a, b) => a.price - b.price);
+    else if (sortOption === "price-high-low") r.sort((a, b) => b.price - a.price);
+    return r;
+  }, [products, selectedCategory, selectedPrices, sortOption]);
+
+  const categoryItems = categories.map((c) => ({ label: c, active: selectedCategory === c }));
+  const priceItems = priceRanges.map((r) => ({ label: r.label, active: selectedPrices.includes(r.label) }));
+  const priceDisplay = selectedPrices.includes("All Price") ? "All Price" : selectedPrices[0];
   const isSidebarOpen = viewGrid === 3;
 
   return (
@@ -60,7 +91,7 @@ const Shop = () => {
               isFilterOpen
               categories={categories}
               selectedCategory={selectedCategory}
-              setSelectedCategory={setSelectedCategory}
+              setSelectedCategory={(cat: string) => dispatch(setFilters({ category: cat }))}
               priceRanges={priceRanges}
               selectedPrices={selectedPrices}
               handlePriceChange={handlePriceChange}
@@ -85,7 +116,7 @@ const Shop = () => {
               onCategorySelect={handleCategorySelect}
               onPriceSelect={handlePriceSelect}
               onToggleDropdown={toggleDropdown}
-              onSort={setSortOption}
+              onSort={handleSortChange}
               sortOption={sortOption}
               mobileIcons={mobileIcons}
             />
@@ -118,7 +149,7 @@ const Shop = () => {
               </div>
             )}
             <div className="flex items-center gap-6 pb-1">
-              <SortByMenu onSort={setSortOption} currentSort={sortOption} />
+              <SortByMenu onSort={handleSortChange} currentSort={sortOption} />
               <GridIconBar
                 icons={desktopIcons}
                 activeGrid={viewGrid}
@@ -128,6 +159,7 @@ const Shop = () => {
           </div>
           <ShopProductGrid
             products={filtered}
+            isLoading={isLoading}
             viewGrid={viewGrid}
             mobileViewGrid={mobileViewGrid}
             visibleCount={visibleCount}

@@ -1,30 +1,86 @@
 "use client";
 import { useEffect, useRef, useState, useMemo } from "react";
 import ButtonText from "../ui/ButtonText";
-import { Product, useProductStore } from "@/store/productStore";
+import { useAppDispatch, useAppSelector, RootState } from "@/store";
 import { useIsMounted } from "@/hooks/useIsMounted";
-import { useProductActions } from "@/hooks/useProductActions";
-import { useProductRatings } from "@/hooks/useProductRatings";
+import { useGetProductsQuery } from "@/store/api/productApi";
+import { addToCart } from "@/store/slices/cartSlice";
+import { addToWishlist, removeFromWishlist } from "@/store/slices/wishlistSlice";
+import { useGetRatingsByProductsQuery, useToggleLikeReviewMutation } from "@/store/api/reviewApi";
+import { useToggleWishlistMutation } from "@/store/api/wishlistApi";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
 import ArrivalCard from "./ArrivalCard";
 
-// Using Product interface from store instead of local one to avoid conflicts
-
 const Arrivals = () => {
-  const { products: allProducts, loading, fetchProducts } = useProductStore();
+  const dispatch = useAppDispatch();
+  const { data: allProducts = [], isLoading } = useGetProductsQuery();
   const products = useMemo(() => allProducts.slice(0, 10), [allProducts]);
-  const supabase = null; // Removed supabase client as it's not needed for fetching here
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollProgress, setScrollProgress] = useState(0);
 
-  const { handleWishlistToggle, handleAddToCart, isInWishlist } =
-    useProductActions();
+  const { user } = useAppSelector((state: RootState) => state.auth);
+  const wishlistItems = useAppSelector((state: RootState) => state.wishlist.items);
+  const { requireAuth } = useAuthGuard();
   const isMounted = useIsMounted();
-  const productIds = useMemo(() => products.map((p) => p.id), [products]);
-  const { getRating } = useProductRatings(productIds);
+  const [toggleWishlistMutation] = useToggleWishlistMutation();
 
-  useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+  const productIds = useMemo(() => products.map((p: any) => p.id), [products]);
+  const { data: ratingsByProduct = {} } = useGetRatingsByProductsQuery(productIds, { skip: productIds.length === 0 });
+
+
+  const isInWishlist = (id: string | number) => wishlistItems.some((i) => i.id == id);
+
+  const getRating = (productId: string | number) => {
+    return ratingsByProduct[String(productId)] || { avgRating: 0, reviewCount: 0 };
+  };
+
+  const handleWishlistToggle = (e: React.MouseEvent, product: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    requireAuth(async () => {
+      const isAdding = !isInWishlist(product.id);
+      if (isAdding) {
+        dispatch(addToWishlist({
+          item: {
+            id: product.id,
+            name: product.title || product.name || "",
+            price: product.price,
+            MRP: product.mrp || product.MRP || product.old_price || product.oldprice || 0,
+            image: product.img || product.image_url || "/image-1.png",
+            color: Array.isArray(product.color) ? product.color[0] : (product.color || "Default"),
+            stock: Number(product.stock) || 0,
+          }
+        }));
+      } else {
+        dispatch(removeFromWishlist({ id: product.id }));
+      }
+
+      if (user) {
+        try {
+          await toggleWishlistMutation({ userId: user.id, productId: String(product.id), adding: isAdding }).unwrap();
+        } catch (error) {
+          console.error("Failed to sync wishlist:", error);
+        }
+      }
+    });
+  };
+
+  const handleAddToCart = (e: React.MouseEvent, product: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    requireAuth(() => {
+      dispatch(addToCart({
+        item: {
+          id: String(product.id),
+          name: product.title || product.name || "",
+          price: product.price,
+          image: product.img || product.image_url || "/image-1.png",
+          color: Array.isArray(product.color) ? product.color[0] : (product.color || "Default"),
+          stock: Number(product.stock) || 0,
+        }
+      }));
+    });
+  };
 
   const handleScroll = () => {
     const el = scrollRef.current;
@@ -46,7 +102,7 @@ const Arrivals = () => {
         </div>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="pl-5 md:pl-10 lg:pl-40 mt-6 md:mt-10 flex gap-4 md:gap-6">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="w-55 md:w-65.5 shrink-0 animate-pulse">
@@ -69,7 +125,7 @@ const Arrivals = () => {
                 display: none;
               }
             `}</style>
-            {products.map((card) => (
+            {products.map((card: any) => (
               <ArrivalCard
                 key={card.id}
                 card={card}

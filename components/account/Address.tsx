@@ -1,9 +1,34 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import AddressModal from "./AddressModal";
-import AddressCard, { DbAddress } from "./AddressCard";
-import { useAddresses } from "@/hooks/useAddresses";
+import AddressCard from "./AddressCard";
+import { useAppSelector, RootState } from "@/store";
+import { 
+  useGetAddressesQuery, 
+  useDeleteAddressMutation, 
+  useSetDefaultAddressMutation, 
+  useSaveAddressMutation 
+} from "@/store/api/addressApi";
+import type { DbAddress, AddressData } from "@/store/api/addressApi";
+
+function dbToFormData(address: DbAddress): AddressData {
+  return {
+    id: address.id,
+    label: address.label || "",
+    type: address.type as "shipping" | "billing",
+    name: `${address.first_name} ${address.last_name}`.trim(),
+    phone: address.phone || "",
+    address: `${address.street_address}, ${address.city}, ${address.state} ${address.zip_code}, ${address.country}`,
+    street_address: address.street_address || "",
+    city: address.city || "",
+    state: address.state || "",
+    zip_code: address.zip_code || "",
+    country: address.country || "",
+    is_default: address.is_default,
+  };
+}
 
 interface AddressProps {
   fullName: string;
@@ -56,20 +81,49 @@ const AddressSection = ({
 );
 
 const Address = ({ fullName }: AddressProps) => {
-  const {
-    loading,
-    modalOpen,
-    editingAddress,
-    modalFixedType,
-    shippingAddresses,
-    billingAddresses,
-    handleAdd,
-    handleEdit,
-    handleDelete,
-    handleSetDefault,
-    handleSave,
-    setModalOpen,
-  } = useAddresses();
+  const { user } = useAppSelector((state: RootState) => state.auth);
+  const { data: addresses = [], isLoading: loading } = useGetAddressesQuery(user?.id ?? '', { skip: !user?.id });
+  const [deleteAddr] = useDeleteAddressMutation();
+  const [setDefault] = useSetDefaultAddressMutation();
+  const [saveAddr] = useSaveAddressMutation();
+  
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingAddress, setEditingAddress] = useState<AddressData | null>(null);
+  const [modalFixedType, setModalFixedType] = useState<"shipping" | "billing" | undefined>(undefined);
+
+  const handleAdd = (type?: "shipping" | "billing") => {
+    setEditingAddress(null);
+    setModalFixedType(type);
+    setModalOpen(true);
+  };
+
+  const handleEdit = (address: DbAddress) => {
+    setEditingAddress(dbToFormData(address));
+    setModalFixedType(address.type as "shipping" | "billing");
+    setModalOpen(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (user?.id) {
+       await deleteAddr({ id, userId: user.id });
+    }
+  };
+
+  const handleSetDefault = async (address: DbAddress) => {
+    if (user?.id) {
+      await setDefault({ id: address.id, userId: user.id, type: address.type });
+    }
+  };
+
+  const handleSave = async (data: AddressData) => {
+    if (user?.id) {
+      await saveAddr({ data, userId: user.id, modalFixedType }).unwrap();
+      setModalOpen(false);
+    }
+  };
+
+  const shippingAddresses = addresses.filter((a) => a.type === "shipping");
+  const billingAddresses = addresses.filter((a) => a.type === "billing");
 
   if (loading) {
     return (

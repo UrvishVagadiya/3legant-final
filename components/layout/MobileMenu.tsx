@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import MobileSearch from "./MobileSearch";
 import MobileMenuFooter from "./MobileMenuFooter";
-import { useAuth } from "@/context/AuthContext";
+import { useAppSelector, RootState } from "@/store";
 
 interface MobileMenuProps {
   isOpen: boolean;
@@ -14,7 +14,7 @@ interface MobileMenuProps {
 }
 
 const MobileMenu = ({ isOpen, onClose }: MobileMenuProps) => {
-  const { user, role } = useAuth();
+  const { user, role } = useAppSelector((state: RootState) => state.auth);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const pathname = usePathname() || "";
 

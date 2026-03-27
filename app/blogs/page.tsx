@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { BsGrid3X3GapFill, BsGridFill } from "react-icons/bs";
 import { PiColumnsFill, PiRowsFill } from "react-icons/pi";
 import GridIconBar from "@/components/shop/GridIconBar";
 import BlogSortMenu from "@/components/sections/BlogSortMenu";
-import { createClient } from "@/utils/supabase/client";
+import { useGetBlogsQuery } from "@/store/api/blogApi";
 
 import { Blog } from "@/types/blog";
 
@@ -23,30 +23,11 @@ const mobileIcons = [
 ];
 
 const Blogs = () => {
-  const [blogs, setBlogs] = useState<Blog[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: blogs = [], isLoading: loading } = useGetBlogsQuery();
   const [viewGrid, setViewGrid] = useState<number>(3);
   const [mobileViewGrid, setMobileViewGrid] = useState<number>(1);
   const [sortOption, setSortOption] = useState("default");
   const [visibleCount, setVisibleCount] = useState<number>(9);
-  const supabase = createClient();
-
-  useEffect(() => {
-    const fetchBlogs = async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("blogs")
-        .select("*")
-        .order("date", { ascending: false });
-
-      if (data && !error) {
-        setBlogs(data);
-      }
-      setLoading(false);
-    };
-
-    fetchBlogs();
-  }, []);
 
   const sortedArticles = useMemo(() => {
     let result = [...blogs];
@@ -67,10 +48,10 @@ const Blogs = () => {
       : viewGrid === 2
         ? "md:grid-cols-2"
         : viewGrid === 3
-          ? "md:grid-cols-4"
-          : "md:grid-cols-3";
+          ? "md:grid-cols-3"
+          : "md:grid-cols-4";
 
-  const mobileGridClass = mobileViewGrid === 1 ? "grid-cols-1" : "grid-cols-2";
+  const mobileGridClass = mobileViewGrid === 1 ? "grid-cols-1" : "grid-cols-1 min-[400px]:grid-cols-2";
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-20 space-y-8 md:space-y-12">
@@ -95,7 +76,7 @@ const Blogs = () => {
               Blog
             </Link>
           </div>
-          <h1 className="my-5 font-poppins text-4xl md:text-[54px] font-medium">
+          <h1 className="my-5 font-poppins text-[28px] xs:text-3xl sm:text-4xl md:text-[54px] font-medium">
             Our Blog
           </h1>
           <p className="text-base md:text-[20px] text-[#121212]">

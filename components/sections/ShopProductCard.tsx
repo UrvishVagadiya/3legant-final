@@ -6,18 +6,16 @@ import { isOfferExpired } from "@/utils/isOfferExpired";
 import { colorMap } from "../product/ColorSelector";
 import TintedProductImage from "../product/TintedProductImage";
 
-import { Product } from "@/store/productStore";
-
 interface ShopProductCardProps {
-  card: Product;
+  card: any;
   viewGrid: number;
   mobileViewGrid: number;
   isMounted: boolean;
   isInWishlist: (id: number | string) => boolean;
   wishlistItems: any[];
-  handleWishlistToggle: (e: React.MouseEvent, card: Product) => void;
-  handleAddToCart: (e: React.MouseEvent, card: Product) => void;
-  getRating: (id: number | string) => { avgRating: number };
+  handleWishlistToggle: (e: React.MouseEvent, card: any) => void;
+  handleAddToCart: (e: React.MouseEvent, card: any) => void;
+  getRating: (id: number | string) => { avgRating: number; reviewCount: number };
 }
 
 const ShopProductCard = ({
@@ -40,11 +38,11 @@ const ShopProductCard = ({
   const overlayClass = `${isMobileExtended ? "hidden" : "block"} ${isHorizontal ? "lg:!hidden" : "lg:!block"}`;
   const extendedClass = `${isMobileExtended ? "block" : "hidden"} ${isHorizontal ? "lg:!block" : "lg:!hidden"}`;
 
-    const colorOptions = Array.isArray(card.color) ? card.color : card.color ? [card.color] : [];
-    const firstColor = colorOptions[0];
-    const colorHex = firstColor ? colorMap[firstColor] : null;
-    const shouldTint = firstColor && firstColor.toLowerCase() !== "white";
-    const isOutOfStock = (card.stock ?? 0) <= 0;
+  const colorOptions = Array.isArray(card.color) ? card.color : card.color ? [card.color] : [];
+  const firstColor = colorOptions[0];
+  const colorHex = firstColor ? colorMap[firstColor] : null;
+  const shouldTint = firstColor && firstColor.toLowerCase() !== "white";
+  const isOutOfStock = (card.stock ?? 0) <= 0;
 
   return (
     <Link
@@ -104,7 +102,7 @@ const ShopProductCard = ({
         className={`mt-3 ${isHorizontal ? "lg:mt-0 lg:flex-1 lg:flex lg:flex-col lg:justify-center lg:py-2" : ""}`}
       >
         <div
-          className={`flex text-[#141718] mb-1.5 md:mb-2 text-[14px] ${isHorizontal ? "lg:text-base lg:mt-2" : ""}`}
+          className={`flex items-center gap-1 text-[#141718] mb-1.5 md:mb-2 text-[14px] ${isHorizontal ? "lg:text-base lg:mt-2" : ""}`}
         >
           <RatingStars rating={getRating(card.id).avgRating} />
         </div>
@@ -130,8 +128,7 @@ const ShopProductCard = ({
 
         <div className={extendedClass}>
           <p className="mt-3 lg:mt-4 text-[#6C7275] text-xs lg:text-sm line-clamp-2 lg:line-clamp-3 mb-4 lg:mb-6 pr-4">
-            Super-soft cushion cover in off-white with a tactile pattern that
-            enhances the different tones in the pile and base.
+            {card.description}
           </p>
           <div className="flex flex-col gap-3 lg:gap-4 lg:max-w-70">
             <button

@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import CheckoutStepper from "@/components/sections/CheckoutStepper";
-import { useCartStore } from "@/store/cartStore";
+import { useAppDispatch } from "@/store";
+import { clearCart } from "@/store/slices/cartSlice";
 
 interface OrderItem {
   id: string;
@@ -29,9 +30,9 @@ interface OrderData {
 const Complete = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const dispatch = useAppDispatch();
   const [orderData, setOrderData] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
-  const { clearCart } = useCartStore();
 
   useEffect(() => {
     const sessionId = searchParams.get("session_id");
@@ -45,7 +46,7 @@ const Complete = () => {
           if (res.ok) {
             const data = await res.json();
             setOrderData(data);
-            clearCart();
+            dispatch(clearCart());
             sessionStorage.removeItem("pendingOrder");
           } else {
             router.push("/");
@@ -66,7 +67,7 @@ const Complete = () => {
         router.push("/");
       }
     }
-  }, [searchParams, router, clearCart]);
+  }, [searchParams, router, dispatch]);
 
   if (loading || !orderData) {
     return (

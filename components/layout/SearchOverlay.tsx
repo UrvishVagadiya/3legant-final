@@ -3,7 +3,9 @@
 import { Search, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
-import { useProductSearch } from "@/hooks/useProductSearch";
+import { useAppDispatch, useAppSelector, RootState } from "@/store";
+import { useSearchProductsQuery } from "@/store/api/productApi";
+import { setSearchQuery, clearSearch } from "@/store/slices/productSlice";
 import { colorMap } from "../product/ColorSelector";
 import TintedProductImage from "../product/TintedProductImage";
 
@@ -13,20 +15,25 @@ interface SearchOverlayProps {
 }
 
 const SearchOverlay = ({ isOpen, onClose }: SearchOverlayProps) => {
-  const { query, results, loading, handleSearchChange, clearSearch } =
-    useProductSearch(8);
+  const dispatch = useAppDispatch();
+  const { searchQuery: query } = useAppSelector((state: RootState) => state.product);
+  
+  const { data: results = [], isFetching: loading } = useSearchProductsQuery(query, {
+    skip: !query.trim(),
+  });
+
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 100);
     } else {
-      clearSearch();
+      dispatch(clearSearch());
     }
-  }, [isOpen]);
+  }, [isOpen, dispatch]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleSearchChange(e.target.value);
+    dispatch(setSearchQuery(e.target.value));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

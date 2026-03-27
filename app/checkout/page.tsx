@@ -7,22 +7,23 @@ import BillingSection from "@/components/checkout/BillingSection";
 import PaymentSection from "@/components/checkout/PaymentSection";
 import OrderSummary from "@/components/checkout/OrderSummary";
 import { SavedAddress } from "@/components/checkout/SavedAddressSelector";
-import { useCartStore } from "@/store/cartStore";
+import { useAppDispatch, useAppSelector, RootState } from "@/store";
+import { updateQuantity, setShippingMethod } from "@/store/slices/cartSlice";
 import { useIsMounted } from "@/hooks/useIsMounted";
 import { getShippingCost } from "@/utils/getShippingCost";
-import { useCheckout, validateCheckoutForm } from "@/hooks/useCheckout";
 import { createClient } from "@/utils/supabase/client";
-import { F, billingKeys, initialForm, applyAddress } from "@/utils/checkoutForm";
-
-import { useAuth } from "@/context/AuthContext";
+import { validateCoupon } from "@/utils/coupon";
+import { F, billingKeys, initialForm, applyAddress, validateCheckoutForm } from "@/utils/checkoutForm";
 import { useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 
 export default function Checkout() {
-  const { user } = useAuth();
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state: RootState) => state.auth);
+  const { items: cartItems, shippingMethod } = useAppSelector((state: RootState) => state.cart);
   const searchParams = useSearchParams();
-  const { items: cartItems, updateQuantity, shippingMethod, setShippingMethod } = useCartStore();
   const isMounted = useIsMounted();
+
   const [useDifferentBilling, setUseDifferentBilling] = useState(false);
   const [savedShipping, setSavedShipping] = useState<SavedAddress[]>([]);
   const [savedBilling, setSavedBilling] = useState<SavedAddress[]>([]);
@@ -31,14 +32,47 @@ export default function Checkout() {
   const [formData, setFormData] = useState(initialForm);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Checkout specific state (previously in useCheckout)
+  const [placing, setPlacing] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<{ id: string; code: string } | null>(null);
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponLoading, setCouponLoading] = useState(false);
+
   const subtotal = cartItems.reduce(
     (a, i) => a + Number(i.price) * i.quantity,
     0,
   );
   const shippingCost = getShippingCost(shippingMethod);
-  const checkout = useCheckout(cartItems, subtotal, shippingCost);
-  const discount = checkout.couponDiscount;
-  const total = subtotal + shippingCost - discount;
+  const total = subtotal + shippingCost - couponDiscount;
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    const result = await validateCoupon(couponCode.trim(), subtotal, user?.id);
+    if (result.valid && result.coupon) {
+      setAppliedCoupon({ id: result.coupon.id, code: result.coupon.code });
+      setCouponDiscount(result.discount);
+      setCouponCode("");
+      toast.success(`Coupon applied! You saved $${result.discount.toFixed(2)}`);
+    } else {
+      toast.error(result.error || "Invalid coupon");
+    }
+    setCouponLoading(false);
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponDiscount(0);
+  };
+
+  const handleUpdateQuantity = (id: string, color: string, quantity: number) => {
+    dispatch(updateQuantity({ id, color, quantity }));
+  };
+
+  const handleSetShippingMethod = (method: string) => {
+    dispatch(setShippingMethod(method));
+  };
 
   useEffect(() => {
     // Check if user returned from cancelled checkout
@@ -168,7 +202,48 @@ export default function Checkout() {
         ?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
-    await checkout.placeOrder(formData, useDifferentBilling, shippingMethod);
+
+    setPlacing(true);
+    try {
+      const supabase = createClient();
+      if (!user) {
+        toast.error("Please sign in to place an order");
+        setPlacing(false);
+        return;
+      }
+
+      const finalTotal = subtotal + shippingCost - couponDiscount;
+
+      sessionStorage.setItem("pendingOrder", JSON.stringify({
+        items: cartItems.map((i) => ({ id: i.id, name: i.name, color: i.color, quantity: i.quantity, price: i.price, image: i.image })),
+        subtotal, shipping: shippingCost, discount: couponDiscount, total: finalTotal,
+      }));
+
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: cartItems.map((i) => ({ id: i.id, name: i.name, price: i.price, quantity: i.quantity, image: i.image, color: i.color })),
+          shippingInfo: { firstName: formData.firstName, lastName: formData.lastName, phone: formData.phone, email: formData.email, streetAddress: formData.streetAddress, city: formData.city, state: formData.state, zipCode: formData.zipCode, country: formData.country },
+          useDifferentBilling,
+          billingInfo: useDifferentBilling ? { firstName: formData.billingFirstName, lastName: formData.billingLastName, phone: formData.billingPhone, streetAddress: formData.billingStreetAddress, city: formData.billingCity, state: formData.billingState, zipCode: formData.billingZipCode, country: formData.billingCountry } : null,
+          shippingMethod, shippingCost, subtotal, discount: couponDiscount, total: finalTotal,
+          couponCode: appliedCoupon?.code || null, couponId: appliedCoupon?.id || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || "Failed to create checkout session");
+        return;
+      }
+      if (data.url) window.location.href = data.url;
+      else toast.error("Unable to redirect to payment page");
+    } catch (err) {
+      console.error("Place order error:", err);
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setPlacing(false);
+    }
   };
 
   if (!isMounted) return null;
@@ -207,27 +282,27 @@ export default function Checkout() {
             />
           )}
           <PaymentSection
-            placing={checkout.placing}
+            placing={placing}
             onPlaceOrder={handlePlaceOrder}
           />
         </div>
         <div className="w-full lg:w-[35%]">
           <OrderSummary
             cartItems={cartItems}
-            updateQuantity={updateQuantity}
+            updateQuantity={handleUpdateQuantity}
             subtotal={subtotal}
             shippingCost={shippingCost}
             shippingMethod={shippingMethod}
-            discount={discount}
+            discount={couponDiscount}
             total={total}
-            couponCode={checkout.couponCode}
-            setCouponCode={checkout.setCouponCode}
-            onApplyCoupon={checkout.handleApplyCoupon}
-            couponLoading={checkout.couponLoading}
-            appliedCoupon={checkout.appliedCoupon}
-            onRemoveCoupon={checkout.removeCoupon}
-            setShippingMethod={setShippingMethod}
-            placing={checkout.placing}
+            couponCode={couponCode}
+            setCouponCode={setCouponCode}
+            onApplyCoupon={handleApplyCoupon}
+            couponLoading={couponLoading}
+            appliedCoupon={appliedCoupon}
+            onRemoveCoupon={removeCoupon}
+            setShippingMethod={handleSetShippingMethod}
+            placing={placing}
             onPlaceOrder={handlePlaceOrder}
           />
         </div>

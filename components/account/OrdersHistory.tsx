@@ -1,38 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import { createClient } from "@/utils/supabase/client";
 import OrderExpandedDetails from "./OrderExpandedDetails";
-import { useAuth } from "@/context/AuthContext";
+import { useAppSelector, RootState } from "@/store";
 
-interface OrderItem {
-  id: string;
-  product_name: string;
-  product_image: string | null;
-  color: string | null;
-  quantity: number;
-  unit_price: number;
-  total_price: number;
-}
 
-interface Order {
-  id: string;
-  order_code: string;
-  created_at: string;
-  status: string;
-  subtotal: number;
-  shipping_cost: number;
-  discount: number;
-  total: number;
-  shipping_method: string;
-  tracking_number: string | null;
-  payment_status: string;
-  refund_status: "none" | "requested" | "approved" | "rejected";
-  refund_request_reason: string | null;
-  refund_requested_at: string | null;
-  delivered_at: string | null;
-}
 
 const badgeStyles: Record<string, { bg: string; text: string; dot: string; border: string }> = {
   delivered: { bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500", border: "border-emerald-100" },
@@ -74,83 +47,21 @@ const formatDate = (dateStr: string) =>
     day: "numeric",
   });
 
+import { useGetOrdersQuery, useGetRefundPeriodQuery } from "@/store/api/orderApi";
+
 const OrdersHistory = () => {
-  const { user } = useAuth();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAppSelector((state: RootState) => state.auth);
+  const { data: orders = [], isLoading: loading } = useGetOrdersQuery(user?.id ?? '', { skip: !user?.id, refetchOnFocus:false,refetchOnMountOrArgChange:false,refetchOnReconnect:false });
+  const { data: refundSettings } = useGetRefundPeriodQuery();
+  const refundPeriod = refundSettings?.days || 7;
+
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
-  const [orderItems, setOrderItems] = useState<Record<string, OrderItem[]>>({});
-  const [loadingItems, setLoadingItems] = useState<string | null>(null);
-  const [refundPeriod, setRefundPeriod] = useState<number>(7);
 
-  const fetchOrders = async () => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    const supabase = createClient();
-    
-    // Fetch refund period setting
-    const { data: settings } = await supabase
-      .from("store_settings")
-      .select("value")
-      .eq("id", "refund_period")
-      .single();
-    
-    if (settings?.value?.days) {
-      setRefundPeriod(settings.value.days);
-    }
-
-    const { data, error } = await supabase
-      .from("orders")
-      .select(
-        "id, order_code, created_at, status, subtotal, shipping_cost, discount, total, shipping_method, tracking_number, payments(status), refund_status, refund_request_reason, refund_requested_at, delivered_at",
-      )
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Fetch orders error:", error);
-      setOrders([]);
-    } else if (data) {
-      const mappedData = data.map((o: any) => ({
-        ...o,
-        payment_status: o.payments?.[0]?.status || "failed"
-      }));
-      setOrders(mappedData);
-    }
-    setLoading(false);
+  const toggleOrderDetails = (orderId: string) => {
+    setExpandedOrder(expandedOrder === orderId ? null : orderId);
   };
 
-  useEffect(() => {
-    fetchOrders();
-  }, [user?.id]);
-
-  const toggleOrderDetails = async (orderId: string) => {
-    if (expandedOrder === orderId) {
-      setExpandedOrder(null);
-      return;
-    }
-    setExpandedOrder(orderId);
-
-    if (!orderItems[orderId]) {
-      setLoadingItems(orderId);
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from("order_items")
-        .select(
-          "id, product_name, product_image, color, quantity, unit_price, total_price",
-        )
-        .eq("order_id", orderId);
-
-      if (!error && data)
-        setOrderItems((prev) => ({ ...prev, [orderId]: data }));
-      setLoadingItems(null);
-    }
-  };
-
-  if (loading) {
+  if (loading) {  
     return (
       <div>
         <h1 className="font-semibold text-[20px] mb-6 md:mb-8">
@@ -227,18 +138,15 @@ const OrdersHistory = () => {
 
               {expandedOrder === order.id && (
                 <OrderExpandedDetails
-                  order={{
-                    ...order,
-                    payment_status: order.payment_status
-                  }}
-                  items={orderItems[order.id] || []}
-                  loadingItems={loadingItems === order.id}
+                  order={order}
+                  items={order.items || []}
+                  loadingItems={false}
                   refundPeriod={refundPeriod}
-                  onStatusUpdate={fetchOrders}
                 />
               )}
             </div>
-          )))}
+          )))
+        }
       </div>
     </div>
   );

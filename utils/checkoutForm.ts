@@ -16,3 +16,23 @@ export function applyAddress(address: SavedAddress, isBilling: boolean): Record<
     if (!isBilling && address.email) r.email = address.email;
     return r;
 }
+
+export function validateCheckoutForm(formData: Record<string, string>, useDifferentBilling: boolean): Record<string, string> {
+    const errors: Record<string, string> = {};
+    const fieldsToValidate = [...F, "email"] as string[];
+    if (useDifferentBilling) {
+        fieldsToValidate.push(...billingKeys);
+    }
+
+    fieldsToValidate.forEach((field) => {
+        if (!formData[field] || !formData[field].trim()) {
+            errors[field] = "This field is required";
+        }
+    });
+
+    if (formData.email && !/^\S+@\S+\.\S+$/.test(formData.email)) {
+        errors.email = "Invalid email format";
+    }
+
+    return errors;
+}

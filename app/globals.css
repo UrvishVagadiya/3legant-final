@@ -1,9 +1,6 @@
 @import "tailwindcss";
 
 
-
-
-
 @theme {
   --font-poppins: var(--font-poppins), sans-serif;
   --font-inter: var(--font-inter), sans-serif;
@@ -14,15 +11,18 @@ body {
   max-width: 1600px;
   margin: 0 auto;
   overflow-x: hidden;
-  user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
 }
 
 .container {
-  margin-left: 50px;
-  margin-right: 50px;
+  margin-left: 16px;
+  margin-right: 16px;
+}
+
+@media (min-width: 768px) {
+  .container {
+    margin-left: 50px;
+    margin-right: 50px;
+  }
 }
 
 /* .slick-prev:before,
@@ -43,6 +43,7 @@ body::-webkit-scrollbar {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;

@@ -3,8 +3,10 @@ export interface Blog {
   title: string;
   img: string;
   date: string; // ISO string from timestamptz
-  author: string;
-  content: string;
+  author?: string;
+  content?: string;
+  category?: string;
+  slug?: string;
 }
 
 export type BlogFormData = {

@@ -1,5 +1,5 @@
-"use client";
-import React, { ChangeEvent } from "react";
+import React, { ChangeEvent, useEffect } from "react";
+import { RefreshCcw } from "lucide-react";
 import { ProductFormData } from "./ProductFormModal";
 
 import { ProductCategory, ProductColor } from "./ProductTableRow";
@@ -11,7 +11,6 @@ const categories: ProductCategory[] = [
   "Bathroom",
   "Dinning",
   "Outdoor",
-  "Office",
 ];
 const colorOptions: ProductColor[] = [
   "Black",
@@ -115,6 +114,23 @@ export default function ProductFormFields({
     }));
   };
 
+  const generateSku = () => {
+    const categoryPrefix = formData.category.length > 0 
+      ? formData.category[0].substring(0, 3).toUpperCase() 
+      : "GEN";
+    const titlePrefix = formData.title 
+      ? formData.title.substring(0, 3).toUpperCase().padEnd(3, 'X') 
+      : "PRD";
+    const randomPart = Math.floor(1000 + Math.random() * 9000);
+    return `${categoryPrefix}-${titlePrefix}-${randomPart}`;
+  };
+
+  useEffect(() => {
+    if (!editingId && !formData.sku && formData.title) {
+        setFormData(prev => ({ ...prev, sku: generateSku() }));
+    }
+  }, [formData.title, editingId]);
+
   const handleFileChange = (index: number, file: File | null) => {
     const newFiles = [...imageFiles];
     newFiles[index] = file;
@@ -217,12 +233,22 @@ export default function ProductFormFields({
         </p>
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <Input
-          label="SKU"
-          name="sku"
-          value={formData.sku}
-          onChange={handleChange}
-        />
+        <div className="relative">
+          <Input
+            label="SKU"
+            name="sku"
+            value={formData.sku}
+            onChange={handleChange}
+          />
+          <button
+            type="button"
+            onClick={() => setFormData(p => ({ ...p, sku: generateSku() }))}
+            className="absolute right-3 top-7 text-gray-400 hover:text-[#141718] transition-colors"
+            title="Regenerate SKU"
+          >
+            <RefreshCcw size={14} />
+          </button>
+        </div>
         <Input
           label="Stock"
           name="stock"

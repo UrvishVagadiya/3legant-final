@@ -1,11 +1,12 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { MdKeyboardArrowRight } from "react-icons/md";
-import { IoMdStar, IoMdStarOutline, IoMdStarHalf } from "react-icons/io";
-import { useWishlistStore } from "../../store/wishlistStore";
-import { useCartStore } from "../../store/cartStore";
+import { useAppDispatch, useAppSelector, RootState } from "@/store";
+import { addToCart, updateQuantity } from "@/store/slices/cartSlice";
+import { useGetReviewsQuery } from "@/store/api/reviewApi";
+import { useGetWishlistItemsQuery, useToggleWishlistMutation } from "@/store/api/wishlistApi";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { useIsMounted } from "@/hooks/useIsMounted";
 import YouMightAlsoLike from "./YouMightAlsoLike";
@@ -17,22 +18,21 @@ import AccordionItem from "./AccordionItem";
 import AdditionalInfo from "./AdditionalInfo";
 import FAQList from "./FAQList";
 import ReviewsSection from "./ReviewsSection";
-import { useReviewStore } from "@/store/reviewStore";
 import TintedProductImage from "./TintedProductImage";
+import { RatingStars } from "@/components/ui/ProductCard";
 
 const refImages = [
-  "/table.png",
-  "/image-1.png",
-  "/image-2.png",
-  "/table10.png",
-  "/table3.png",
-  "/table5.png",
+  "/table/tray_table_premium.png",
+  "/table/image-1.png",
+  "/table/image-2.png",
+  "/table/table10.png",
+  "/table/table3.png",
+  "/table/table5.png",
 ];
 
-import { useAuth } from "@/context/AuthContext";
-
 export const DisplayProduct = ({ p }: { p: any }) => {
-  const { user } = useAuth();
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state: RootState) => state.auth);
   const isMounted = useIsMounted();
   const [quantity, setQuantity] = useState(1);
   const [openAccordion, setOpenAccordion] = useState<string | null>("");
@@ -44,19 +44,12 @@ export const DisplayProduct = ({ p }: { p: any }) => {
   const [selectedColor, setSelectedColor] = useState(
     colorOptions[0] || "Black",
   );
-  const { reviewsByProduct, fetchReviews } = useReviewStore();
-  const reviews = reviewsByProduct[p.id] || [];
-  
-  useEffect(() => {
-    fetchReviews(p.id, user?.id);
-  }, [p.id, user?.id, fetchReviews]);
-  const {
-    items: wishlistItems,
-    addToWishlist,
-    removeFromWishlist,
-    isInWishlist,
-  } = useWishlistStore();
-  const { addToCart, updateQuantity, items: cartItems } = useCartStore();
+
+  const { data: reviews = [] } = useGetReviewsQuery({ productId: p.id, userId: user?.id });
+  const { data: wishlistItems = [] } = useGetWishlistItemsQuery(user?.id ?? '', { skip: !user?.id });
+  const [toggleWishlist] = useToggleWishlistMutation();
+
+  const isInWishlist = (id: string | number) => wishlistItems.some((i) => i.id == id);
   const { requireAuth } = useAuthGuard();
 
   const pid = p.id || p.sku;
@@ -77,43 +70,38 @@ export const DisplayProduct = ({ p }: { p: any }) => {
   const shouldTint = selectedColor.toLowerCase() !== "white";
 
   const handleWishlistToggle = () =>
-    requireAuth(() => {
-      if (isInWishlist(pid)) removeFromWishlist(pid, user);
-      else
-        addToWishlist({
-          id: pid,
-          name: p.name || "Tray Table",
-          price,
-          MRP: mrp,
-          image: refImages[0],
-          color: selectedColor,
-          stock: p.stock || 0,
-        }, user);
+    requireAuth(async () => {
+      const currentlyIn = isInWishlist(pid);
+      await toggleWishlist({
+        userId: user!.id,
+        productId: String(pid),
+        adding: !currentlyIn
+      });
     });
 
   const handleAddToCart = () =>
     requireAuth(() => {
-      addToCart({
-        id: String(pid),
-        name: p.name || p.title || "Tray Table",
-        price,
-        image: img,
-        color: selectedColor,
-        stock: p.stock || 0,
-      }, user);
-      if (quantity > 1)
-        setTimeout(
-          () => updateQuantity(String(pid), selectedColor, quantity, user),
-          0,
-        );
+      dispatch(addToCart({
+        item: {
+          id: String(pid),
+          name: p.name || p.title || "Tray Table",
+          price,
+          image: img,
+          color: selectedColor,
+          stock: p.stock || 0,
+        }
+      }));
+      if (quantity > 1) {
+        dispatch(updateQuantity({ id: String(pid), color: selectedColor, quantity }));
+      }
     });
 
   if (!isMounted) return null;
 
   const avgRating = reviews.length > 0 ? reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length : 0;
 
-  const productImages = p.images && Array.isArray(p.images) && p.images.length > 0 
-    ? p.images 
+  const productImages = p.images && Array.isArray(p.images) && p.images.length > 0
+    ? p.images
     : [img, ...refImages.slice(1)];
 
   return (
@@ -195,20 +183,17 @@ export const DisplayProduct = ({ p }: { p: any }) => {
         <div className="w-full lg:sticky lg:top-10 h-fit flex flex-col gap-6">
           <div className="flex flex-col gap-4 border-b border-[#E8ECEF] pb-6">
             <div className="flex items-center gap-2">
-              <div className="flex text-[#141718] text-[14px]">
-                {[1, 2, 3, 4, 5].map((s) =>
-                  avgRating >= s ? (
-                    <IoMdStar key={s} />
-                  ) : avgRating >= s - 0.5 ? (
-                    <IoMdStarHalf key={s} />
-                  ) : (
-                    <IoMdStarOutline key={s} />
-                  ),
-                )}
+              <div className="flex items-center gap-1">
+                <RatingStars
+                  rating={avgRating}
+                  className="text-[#141718] text-[14px]"
+                />
+                <span className="text-sm font-medium text-[#141718] ml-1">
+                  {avgRating.toFixed(1)}
+                </span>
               </div>
-              <span className="text-[#141718] text-sm">
-                {reviews.length} Review
-                {reviews.length !== 1 ? "s" : ""}
+              <span className="text-[#6C7275] text-sm">
+                ({reviews.length} {reviews.length === 1 ? "Review" : "Reviews"})
               </span>
             </div>
             <h1 className="font-poppins text-3xl md:text-[40px] font-medium leading-tight text-[#141718]">

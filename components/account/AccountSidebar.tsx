@@ -5,7 +5,8 @@ import { FaPencil } from "react-icons/fa6";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import { v4 as uuidv4 } from "uuid";
-import { useAuth } from "@/context/AuthContext";
+import { useAppDispatch, useAppSelector, RootState } from "@/store";
+import { useUpdateProfileMutation } from "@/store/api/authApi";
 
 type Tab = "account" | "address" | "orders" | "wishlist";
 
@@ -33,11 +34,14 @@ const AccountSidebar = ({
   onTabChange,
   onAvatarChange,
 }: AccountSidebarProps) => {
-  const { user } = useAuth();
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state: RootState) => state.auth);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const supabase = createClient();
+
+  const [updateProfile] = useUpdateProfileMutation();
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -54,10 +58,9 @@ const AccountSidebar = ({
       const { data: urlData } = supabase.storage
         .from("avatars")
         .getPublicUrl(filePath);
-      const { error: updateError } = await supabase.auth.updateUser({
-        data: { avatar_url: urlData.publicUrl },
-      });
-      if (updateError) throw updateError;
+
+      await updateProfile({ avatar_url: urlData.publicUrl }).unwrap();
+
       onAvatarChange(urlData.publicUrl);
     } catch (error: any) {
       console.error("Error uploading image:", error);

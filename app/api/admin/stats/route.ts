@@ -17,21 +17,38 @@ export async function GET() {
         admin.from("coupons").select("id", { count: "exact", head: true }).eq("is_active", true),
     ]);
 
-    const ordersData = (orders.data || []) as { id: string; total: number; status: string; subtotal: number; shipping_cost: number; discount: number }[];
+    if (products.error || orders.error || payments.error || coupons.error) {
+        console.error("Stats fetch error:", {
+            products: products.error,
+            orders: orders.error,
+            payments: payments.error,
+            coupons: coupons.error
+        });
+        return NextResponse.json({ error: "Failed to fetch dashboard statistics" }, { status: 500 });
+    }
+
+    const ordersData = (orders.data || []) as { id: string; total: any; status: string; subtotal: any; shipping_cost: any; discount: any }[];
     const totalRevenue = ordersData.reduce((sum, o) => {
-        // Exclude cancelled and refunded orders from revenue
-        if (o.status === "cancelled" || o.status === "refunded") return sum;
-        
-        const orderTotal = Number(o.total) || (Number(o.subtotal || 0) + Number(o.shipping_cost || 0) - Number(o.discount || 0));
-        return sum + orderTotal;
+        if (o.status === "cancelled" || o.status === "refunded") return sum;   
+        const total = parseFloat(String(o.total || 0));
+        const subtotal = parseFloat(String(o.subtotal || 0));
+        const shipping = parseFloat(String(o.shipping_cost || 0));
+        const discount = parseFloat(String(o.discount || 0));
+
+        const orderTotal = total > 0 ? total : (subtotal + shipping - discount);
+        return sum + (isNaN(orderTotal) ? 0 : orderTotal);
     }, 0);
     const pendingOrders = ordersData.filter((o) => o.status === "pending").length;
 
-    const { data: recent } = await admin
+    const { data: recent, error: recentError } = await admin
         .from("orders")
         .select("id, order_code, status, total, created_at, shipping_first_name, shipping_last_name, subtotal, shipping_cost, discount, payments(status)")
         .order("created_at", { ascending: false })
         .limit(5);
+
+    if (recentError) {
+        console.error("Recent orders fetch error:", recentError);
+    }
 
     const recentOrders = (recent || []).map((order: any) => ({
         ...order,
@@ -42,7 +59,7 @@ export async function GET() {
         stats: {
             totalProducts: products.count || 0,
             totalOrders: orders.count || 0,
-            totalRevenue,
+            totalRevenue: Number(totalRevenue.toFixed(2)),
             totalPayments: payments.count || 0,
             activeCoupons: coupons.count || 0,
             pendingOrders,

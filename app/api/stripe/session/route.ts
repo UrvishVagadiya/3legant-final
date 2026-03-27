@@ -31,7 +31,6 @@ export async function GET(req: NextRequest) {
 
         const admin = createAdminClient();
 
-        // Check if order already exists (created by webhook)
         let payment = null;
         if (paymentIntentId) {
             const { data } = await admin
@@ -42,7 +41,6 @@ export async function GET(req: NextRequest) {
             payment = data;
         }
 
-        // Reconstruct items with full details
         const productIds = items.map((i: any) => i.id || i.product_id);
         const { data: products } = await admin
             .from("products")
@@ -70,7 +68,6 @@ export async function GET(req: NextRequest) {
             existingOrder = data;
         }
 
-        // 1. Handle Order Status Update (or creation if fallback)
         let finalOrder = existingOrder;
         let subtotal = parseFloat(meta.subtotal || "0");
         let shippingCost = parseFloat(meta.shipping_cost || "0");
@@ -79,7 +76,6 @@ export async function GET(req: NextRequest) {
         const orderCode = existingOrder?.order_code || `#${Date.now().toString().slice(-10)}`;
 
         if (existingOrder) {
-            // Update existing pending order to confirmed
             const { error: updateError } = await admin
                 .from("orders")
                 .update({ 
@@ -90,7 +86,6 @@ export async function GET(req: NextRequest) {
             
             if (updateError) console.error("Failed to update order status:", updateError);
         } else if (userId) {
-            // Fallback: Create order if somehow it wasn't pre-created
             if (total === 0 && fullItems.length > 0) {
                 subtotal = fullItems.reduce((acc: number, item: any) => acc + (Number(item.price) * item.quantity), 0);
                 total = subtotal + shippingCost - discountAmount;
@@ -105,7 +100,6 @@ export async function GET(req: NextRequest) {
                     subtotal,
                     shipping_cost: shippingCost,
                     discount: discountAmount,
-                    tax: 0,
                     total,
                     shipping_method: meta.shipping_method || "free",
                     coupon_code: meta.coupon_code || null,
@@ -125,7 +119,6 @@ export async function GET(req: NextRequest) {
             
             if (!createError) {
                 finalOrder = createdOrder;
-                // Create order items for the new order
                 const dbItems = fullItems.map((item: any) => ({
                     order_id: createdOrder.id,
                     product_id: item.id,
@@ -144,7 +137,6 @@ export async function GET(req: NextRequest) {
              return NextResponse.json({ error: "Order context lost" }, { status: 500 });
         }
 
-        // 2. Create or Update payment record
         const { data: existingPayment } = await admin.from("payments").select("id").eq("order_id", finalOrder.id).maybeSingle();
         
         let cardLast4: string | null = null;
@@ -185,7 +177,6 @@ export async function GET(req: NextRequest) {
             }
         }
 
-        // 3. Post-processing
         if (meta.coupon_id) {
             const { data: coupon } = await admin.from("coupons").select("used_count").eq("id", meta.coupon_id).single();
             if (coupon) {
@@ -193,7 +184,6 @@ export async function GET(req: NextRequest) {
             }
         }
 
-        // Clear user's cart
         await admin.from("cart").delete().eq("user_id", userId);
 
         return NextResponse.json({

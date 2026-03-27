@@ -6,7 +6,7 @@ import { isOfferExpired } from "@/utils/isOfferExpired";
 import { colorMap } from "../product/ColorSelector";
 import TintedProductImage from "../product/TintedProductImage";
 
-import { Product } from "@/store/productStore";
+import { Product } from "@/store/slices/productSlice";
 
 interface ArrivalCardProps {
   card: Product;
@@ -14,7 +14,7 @@ interface ArrivalCardProps {
   isInWishlist: (id: number | string) => boolean;
   handleWishlistToggle: (e: React.MouseEvent, card: Product) => void;
   handleAddToCart: (e: React.MouseEvent, card: Product) => void;
-  getRating: (id: number | string) => { avgRating: number };
+  getRating: (id: number | string) => { avgRating: number; reviewCount: number };
 }
 
 const discount = (price: number, mrp?: number) => {
@@ -88,10 +88,15 @@ const ArrivalCard = ({
         </div>
       </div>
       <div className="my-3">
-        <RatingStars
-          rating={getRating(card.id).avgRating}
-          className="text-[#141718] mb-1.5 md:mb-2 text-sm md:text-base"
-        />
+        <div className="flex items-center gap-1 mb-1.5 md:mb-2">
+          <RatingStars
+            rating={getRating(card.id).avgRating}
+            className="text-[#141718] text-sm md:text-base"
+          />
+          <span className="text-xs text-[#6C7275] ml-1">
+            ({getRating(card.id).reviewCount})
+          </span>
+        </div>
         <h3 className="font-semibold text-base md:text-lg mb-1">
           {card.title}
         </h3>

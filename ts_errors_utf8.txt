@@ -1,7 +1,0 @@
-﻿src/app/blogs/[blogId]/page.tsx(4,27): error TS2307: Cannot find module '../../../const/data' or its corresponding type declarations.
-src/app/blogs/[blogId]/page.tsx(16,32): error TS7006: Parameter 'b' implicitly has an 'any' type.
-src/app/blogs/page.tsx(8,27): error TS2307: Cannot find module '../../const/data' or its corresponding type declarations.
-src/components/layout/Header.tsx(4,24): error TS2307: Cannot find module './ButtonText' or its corresponding type declarations.
-src/components/sections/Ads.tsx(3,24): error TS2307: Cannot find module './ButtonText' or its corresponding type declarations.
-src/components/sections/Arrivals.tsx(1,24): error TS2307: Cannot find module './ButtonText' or its corresponding type declarations.
-src/components/sections/Artical.tsx(2,24): error TS2307: Cannot find module './ButtonText' or its corresponding type declarations.

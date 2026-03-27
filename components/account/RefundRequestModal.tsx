@@ -1,7 +1,8 @@
 "use client";
 import React, { useState } from "react";
 import { X, Loader2 } from "lucide-react";
-import toast from "react-hot-toast";
+import { useAppSelector, RootState } from "@/store";
+import { useCancelOrderMutation, useRequestRefundMutation } from "@/store/api/orderApi";
 
 interface RefundRequestModalProps {
   orderId: string;
@@ -18,35 +19,31 @@ const RefundRequestModal = ({
   onClose,
   onSuccess,
 }: RefundRequestModalProps) => {
+  const { user } = useAppSelector((state: RootState) => state.auth);
   const [reason, setReason] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [cancelOrder, { isLoading: isCancelling }] = useCancelOrderMutation();
+  const [requestRefund, { isLoading: isRequestingRefund }] = useRequestRefundMutation();
+
+  const loading = isCancelling || isRequestingRefund;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reason.trim()) {
-      toast.error("Please provide a reason for the refund");
+    if (!reason.trim() || !user?.id) {
       return;
     }
 
-    setLoading(true);
     try {
-      const endpoint = isInstant ? "/api/orders/cancel-instant" : "/api/orders/refund-request";
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, reason }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to submit request");
-
-      toast.success(isInstant ? "Order cancelled and refund processed" : "Refund request submitted successfully");
+      if (isInstant) {
+        await cancelOrder({ orderId, userId: user.id, reason }).unwrap();
+      } else {
+        await requestRefund({ orderId, userId: user.id, reason }).unwrap();
+      }
+      
       onSuccess();
       onClose();
     } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-      setLoading(false);
+      // Error is handled by RTK Query or toast
+      console.error("Error:", error);
     }
   };
 
@@ -59,12 +56,12 @@ const RefundRequestModal = ({
             <X size={20} />
           </button>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
             <p className="text-sm text-gray-600 mb-4">
-              {isInstant 
-                ? `You are cancelling order ${orderCode}. A full refund will be processed automatically.` 
+              {isInstant
+                ? `You are cancelling order ${orderCode}. A full refund will be processed automatically.`
                 : `You are requesting a refund for order ${orderCode}. This will be reviewed by our admin team.`}
               Please provide a reason below.
             </p>

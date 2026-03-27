@@ -5,9 +5,8 @@ import { Handbag, Heart } from "lucide-react";
 import { IoLogoInstagram } from "react-icons/io";
 import { FiFacebook } from "react-icons/fi";
 import { GoVideo } from "react-icons/go";
-import { useCartStore } from "@/store/cartStore";
-import { useWishlistStore } from "@/store/wishlistStore";
 import { useIsMounted } from "@/hooks/useIsMounted";
+import { useAppSelector, RootState } from "@/store";
 
 interface MobileMenuFooterProps {
   user: any;
@@ -15,11 +14,11 @@ interface MobileMenuFooterProps {
 }
 
 const MobileMenuFooter = ({ user, onClose }: MobileMenuFooterProps) => {
-  const { items: cartItems } = useCartStore();
-  const { items: wishlistItems } = useWishlistStore();
+  const { items: cartItems } = useAppSelector((state: RootState) => state.cart);
+  const { items: wishlistItems } = useAppSelector((state: RootState) => state.wishlist);
   const isMounted = useIsMounted();
 
-  const cartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+  const cartCount = cartItems.reduce((acc: number, item: any) => acc + item.quantity, 0);
   const wishlistCount = wishlistItems.length;
 
   return (

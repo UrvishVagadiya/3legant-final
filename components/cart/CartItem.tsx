@@ -1,16 +1,15 @@
 import { X } from "lucide-react";
 import TintedProductImage from "../product/TintedProductImage";
-import { CartItem as CartItemType } from "@/store/cartStore";
+import { CartItem as CartItemType } from "@/store/slices/cartSlice";
 import { colorMap } from "../product/ColorSelector";
 
 interface CartItemProps {
   item: CartItemType;
-  onRemove: (id: string, color: string, user?: any) => void;
-  onUpdateQuantity: (id: string, color: string, quantity: number, user?: any) => void;
-  user?: any;
+  onRemove: (id: string, color: string) => void;
+  onUpdateQuantity: (id: string, color: string, quantity: number) => void;
 }
 
-const CartItem = ({ item, onRemove, onUpdateQuantity, user }: CartItemProps) => {
+const CartItem = ({ item, onRemove, onUpdateQuantity }: CartItemProps) => {
   const colorHex = item.color ? colorMap[item.color] : null;
   const shouldTint = item.color && item.color.toLowerCase() !== 'white';
 
@@ -33,7 +32,7 @@ const CartItem = ({ item, onRemove, onUpdateQuantity, user }: CartItemProps) => 
           <h3 className="font-semibold text-base">{item.name}</h3>
           <p className="text-sm text-gray-500 mt-1">Color: {item.color}</p>
           <button
-            onClick={() => onRemove(item.id, item.color, user)}
+            onClick={() => onRemove(item.id, item.color)}
             className="flex items-center gap-1 text-sm text-gray-500 mt-2 hover:text-black transition-colors"
           >
             <X size={16} /> Remove
@@ -48,7 +47,7 @@ const CartItem = ({ item, onRemove, onUpdateQuantity, user }: CartItemProps) => 
         <div className="flex items-center border border-gray-400 rounded px-2 py-1 gap-4 w-25 justify-between">
           <button
             onClick={() =>
-              onUpdateQuantity(item.id, item.color, item.quantity - 1, user)
+              onUpdateQuantity(item.id, item.color, item.quantity - 1)
             }
             className="text-lg text-gray-500"
           >
@@ -57,7 +56,7 @@ const CartItem = ({ item, onRemove, onUpdateQuantity, user }: CartItemProps) => 
           <span className="font-semibold">{item.quantity}</span>
           <button
             onClick={() =>
-              onUpdateQuantity(item.id, item.color, item.quantity + 1, user)
+              onUpdateQuantity(item.id, item.color, item.quantity + 1)
             }
             disabled={item.quantity >= item.stock}
             className={`text-lg transition-colors ${item.quantity >= item.stock ? "text-gray-300 cursor-not-allowed" : "text-gray-500 hover:text-black"}`}

@@ -65,14 +65,12 @@ export default function ProductTableRow({
     <tr className="border-t border-gray-100 hover:bg-gray-50">
       <td className="px-6 py-4">
         <div className="flex items-center gap-3">
-          <div className="relative w-12 h-12 bg-gray-100 rounded shrink-0">
+          <div className="w-14 h-14 bg-gray-100 rounded shrink-0 overflow-hidden">
             {product.img && (
-              <Image
+              <img
                 src={product.img}
                 alt={product.title}
-                fill
-                unoptimized
-                className="object-cover rounded"
+                className="w-full h-full object-cover"
               />
             )}
           </div>

@@ -45,24 +45,26 @@ export async function POST(req: NextRequest) {
 
             const meta = session.metadata || {};
             const userId = meta.user_id;
+            const orderIdFromMeta = meta.order_id;
+            
             if (!userId) {
                 console.error("No user_id in session metadata");
                 break;
             }
 
-            // Check if order already exists for this session (idempotency)
+            // Check if payment already processed (idempotency)
             const { data: existingPayment } = await admin
                 .from("payments")
                 .select("id")
                 .eq("transaction_id", session.payment_intent as string)
-                .single();
+                .maybeSingle();
 
-            if (existingPayment) {
-                console.log("Order already processed for this payment intent");
-                break;
+            if (existingPayment?.id && session.payment_status === "paid" && session.payment_intent) {
+                 // Already processed
+                 console.log("Payment already processed");
+                 break;
             }
 
-            const orderCode = `#${Date.now().toString().slice(-10)}`;
             const items = JSON.parse(meta.items_json || "[]");
             let subtotal = parseFloat(meta.subtotal || "0");
             let shippingCost = parseFloat(meta.shipping_cost || "0");
@@ -79,49 +81,72 @@ export async function POST(req: NextRequest) {
                 total = subtotal + shippingCost - discountAmount;
             }
 
-            // Create order
+            // Create or Update order
+            let order;
+            let orderError;
             const hasDifferentBilling = meta.has_different_billing === "true";
-            const { data: order, error: orderError } = await admin
-                .from("orders")
-                .insert({
-                    order_code: orderCode,
-                    user_id: userId,
-                    status: "confirmed",
-                    subtotal,
-                    shipping_cost: shippingCost,
-                    discount: discountAmount,
-                    tax: 0,
-                    total,
-                    shipping_method: meta.shipping_method || "free",
-                    coupon_code: meta.coupon_code || null,
-                    shipping_first_name: meta.shipping_first_name,
-                    shipping_last_name: meta.shipping_last_name,
-                    shipping_phone: meta.shipping_phone,
-                    shipping_email: meta.shipping_email,
-                    shipping_street_address: meta.shipping_street_address,
-                    shipping_city: meta.shipping_city,
-                    shipping_state: meta.shipping_state,
-                    shipping_zip_code: meta.shipping_zip_code,
-                    shipping_country: meta.shipping_country,
-                    has_different_billing: hasDifferentBilling,
-                    ...(hasDifferentBilling
-                        ? {
-                            billing_first_name: meta.billing_first_name || null,
-                            billing_last_name: meta.billing_last_name || null,
-                            billing_phone: meta.billing_phone || null,
-                            billing_street_address: meta.billing_street_address || null,
-                            billing_city: meta.billing_city || null,
-                            billing_state: meta.billing_state || null,
-                            billing_zip_code: meta.billing_zip_code || null,
-                            billing_country: meta.billing_country || null,
-                        }
-                        : {}),
-                })
-                .select()
-                .single();
 
-            if (orderError) {
-                console.error("Failed to create order:", orderError);
+            if (orderIdFromMeta) {
+                // Update existing pending order
+                const { data, error } = await admin
+                    .from("orders")
+                    .update({
+                        status: "confirmed",
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq("id", orderIdFromMeta)
+                    .select()
+                    .single();
+                order = data;
+                orderError = error;
+                console.log("Updated existing order:", order?.id);
+            } else {
+                // Fallback: Create new order if none was found in meta
+                const orderCode = `#${Date.now().toString().slice(-6)}${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
+                const { data, error } = await admin
+                    .from("orders")
+                    .insert({
+                        order_code: orderCode,
+                        user_id: userId,
+                        status: "confirmed",
+                        subtotal,
+                        shipping_cost: shippingCost,
+                        discount: discountAmount,
+                        total,
+                        shipping_method: meta.shipping_method || "free",
+                        coupon_code: meta.coupon_code || null,
+                        shipping_first_name: meta.shipping_first_name,
+                        shipping_last_name: meta.shipping_last_name,
+                        shipping_phone: meta.shipping_phone,
+                        shipping_email: meta.shipping_email,
+                        shipping_street_address: meta.shipping_street_address,
+                        shipping_city: meta.shipping_city,
+                        shipping_state: meta.shipping_state,
+                        shipping_zip_code: meta.shipping_zip_code,
+                        shipping_country: meta.shipping_country,
+                        has_different_billing: hasDifferentBilling,
+                        ...(hasDifferentBilling
+                            ? {
+                                billing_first_name: meta.billing_first_name || null,
+                                billing_last_name: meta.billing_last_name || null,
+                                billing_phone: meta.billing_phone || null,
+                                billing_street_address: meta.billing_street_address || null,
+                                billing_city: meta.billing_city || null,
+                                billing_state: meta.billing_state || null,
+                                billing_zip_code: meta.billing_zip_code || null,
+                                billing_country: meta.billing_country || null,
+                            }
+                            : {}),
+                    })
+                    .select()
+                    .single();
+                order = data;
+                orderError = error;
+                console.log("Created new order from webhook fallback:", order?.id);
+            }
+
+            if (orderError || !order) {
+                console.error("Failed to sync order in webhook:", orderError);
                 break;
             }
 
@@ -250,7 +275,7 @@ export async function POST(req: NextRequest) {
             // Delete user's cart after successful payment
             await admin.from("cart").delete().eq("user_id", userId);
 
-            console.log(`Order ${orderCode} created successfully for session ${session.id}`);
+            console.log(`Order ${order?.order_code || 'Unknown'} created/updated successfully for session ${session.id}`);
             break;
         }
 

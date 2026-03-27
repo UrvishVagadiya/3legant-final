@@ -153,13 +153,16 @@ const ProductCard = ({
       </div>
 
       <div className={isSmall ? "my-3" : "mt-3"}>
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-1 mb-1">
           <RatingStars
             rating={avgRating}
             className={`text-[#141718] ${isSmall ? "text-sm md:text-base" : "text-[14px]"}`}
           />
+          <span className="text-xs text-[#6C7275] ml-1">
+            ({reviewCount})
+          </span>
           {showColors && colorOptions.length > 1 && (
-            <div className="flex gap-1.5 z-20">
+            <div className="flex gap-1.5 z-20 ml-auto">
               {colorOptions.slice(0, 4).map((c: string) => (
                 <button
                   key={c}

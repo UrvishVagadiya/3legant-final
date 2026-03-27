@@ -1,7 +1,47 @@
+"use client";
+
 import Image from "next/image";
+import { useState } from "react";
 import { MdOutlineMail } from "react-icons/md";
+import { createClient } from "@/utils/supabase/client";
+import toast from "react-hot-toast";
 
 const NewsLetter = () => {
+  const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const supabase = createClient();
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !email.includes("@")) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from("newsletter_subscriptions")
+        .insert([{ email }]);
+
+      if (error) {
+        if (error.code === "23505") {
+          toast.success("You're already subscribed!");
+        } else {
+          throw error;
+        }
+      } else {
+        toast.success("Thank you for subscribing!");
+        setEmail("");
+      }
+    } catch (err: any) {
+      console.error("Newsletter error:", err);
+      toast.error("Something went wrong. Please try again later.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="bg-[#F3F5F7] relative h-[auto] py-16 md:py-0 md:h-[360px] w-full overflow-hidden">
       <div className="hidden md:block">
@@ -33,19 +73,29 @@ const NewsLetter = () => {
           </h3>
         </div>
 
-        <div className="flex w-full md:w-[60%] lg:w-[40%] xl:w-[30%] items-center justify-between pb-2 border-b border-gray-400 gap-3">
+        <form 
+          onSubmit={handleSignup}
+          className="flex w-full md:w-[60%] lg:w-[40%] xl:w-[30%] items-center justify-between pb-2 border-b border-gray-400 gap-3"
+        >
           <div className="flex items-center gap-3 w-full">
             <MdOutlineMail className="text-2xl text-[#141718]" />
             <input
               className="bg-transparent outline-none w-full text-base placeholder:text-[#6C7275] text-[#141718]"
               type="email"
               placeholder="Email address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={isLoading}
             />
           </div>
-          <button className="text-[#6C7275] hover:text-[#141718] transition-colors font-medium cursor-pointer pl-4 duration-300 ease-in-out">
-            Signup
+          <button 
+            type="submit"
+            disabled={isLoading}
+            className="text-[#6C7275] hover:text-[#141718] transition-colors font-medium cursor-pointer pl-4 duration-300 ease-in-out disabled:opacity-50"
+          >
+            {isLoading ? "Signing up..." : "Signup"}
           </button>
-        </div>
+        </form>
       </div>
     </div>
   );

@@ -54,8 +54,6 @@ export async function middleware(request: NextRequest) {
         }
     } catch (error) {
         console.error("Middleware Supabase fetch failed:", error);
-        // During development or network failure, we let the request continue 
-        // if it's not a protected admin path, or redirect if it is.
         if (request.nextUrl.pathname.startsWith("/admin")) {
             return NextResponse.redirect(new URL("/signin", request.url));
         }

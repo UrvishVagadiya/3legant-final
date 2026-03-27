@@ -28,6 +28,7 @@ interface Order {
   refund_request_reason?: string | null;
   refund_requested_at?: string | null;
   delivered_at?: string | null;
+  created_at: string;
 }
 
 interface OrderExpandedDetailsProps {
@@ -52,19 +53,34 @@ const OrderExpandedDetails = ({
     ["pending", "confirmed", "processing"].includes(order.status);
 
   // Calculate if refund period has expired for delivered orders
-  const isRefundExpired = (() => {
-    if (order.status !== "delivered" || !order.delivered_at) return false;
-    const deliveredDate = new Date(order.delivered_at);
+  const refundInfo = (() => {
+    const status = order.status.toLowerCase();
+    if (status !== "delivered") return { expired: false };
+    
+    // Fallback to created_at if delivered_at is missing for legacy orders
+    const deliveredAt = order.delivered_at || order.created_at;
+    const deliveredDate = new Date(deliveredAt);
+    const expiryDate = new Date(deliveredDate);
+    expiryDate.setDate(deliveredDate.getDate() + refundPeriod);
+    
     const now = new Date();
-    const diffTime = Math.abs(now.getTime() - deliveredDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > refundPeriod;
+    const expired = now > expiryDate;
+    
+    const remainingMs = expiryDate.getTime() - now.getTime();
+    const remainingDays = Math.max(0, Math.ceil(remainingMs / (1000 * 60 * 60 * 24)));
+    
+    return { 
+      expired, 
+      expiryDate,
+      deliveredDate,
+      remainingDays
+    };
   })();
 
   const isRefundRequestEligible = 
     order.refund_status === "none" && 
-    !isRefundExpired &&
-    ["shipped", "delivered", "cancelled"].includes(order.status);
+    !refundInfo.expired &&
+    ["shipped", "delivered", "cancelled"].includes(order.status.toLowerCase());
 
   return (
     <div className="border-t border-gray-200 p-4 md:p-5 bg-gray-50/50">
@@ -170,14 +186,20 @@ const OrderExpandedDetails = ({
               )}
 
               {isRefundRequestEligible && (
-                <button 
-                  onClick={() => setShowRefundModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 border border-[#141718] rounded-full text-sm font-medium hover:bg-[#141718] hover:text-white transition-all shadow-sm"
-                >
-                  <RefreshCcw size={16} />
-                  Request Refund
-                </button>
+                <div className="flex flex-col items-end gap-1">
+                  <button 
+                    onClick={() => setShowRefundModal(true)}
+                    className="flex items-center gap-2 px-4 py-2 border border-[#141718] rounded-full text-sm font-medium hover:bg-[#141718] hover:text-white transition-all shadow-sm"
+                  >
+                    <RefreshCcw size={16} />
+                    Request Refund
+                  </button>
+                  <span className="text-[10px] text-[#6C7275] font-medium italic">
+                    ({refundInfo.remainingDays} {refundInfo.remainingDays === 1 ? 'day' : 'days'} left to request refund)
+                  </span>
+                </div>
               )}
+
 
               {order.refund_status !== "none" && (
                 <div className={`flex items-center gap-2 px-4 py-2 border rounded-full text-sm font-medium shadow-sm capitalize ${

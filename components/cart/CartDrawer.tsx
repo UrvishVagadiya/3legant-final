@@ -3,17 +3,25 @@
 import { X, Plus, Minus } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useCartStore } from "../../store/cartStore";
 import { useIsMounted } from "@/hooks/useIsMounted";
-
-import { useAuth } from "@/context/AuthContext";
+import { useAppDispatch, useAppSelector, RootState } from "@/store";
+import { useEffect } from "react";
+import { toggleCart, removeFromCart, updateQuantity } from "@/store/slices/cartSlice";
+import { useSyncCartMutation } from "@/store/api/cartApi";
 import { colorMap } from "../product/ColorSelector";
 
 export default function CartDrawer() {
-  const { user } = useAuth();
-  const { isCartOpen, toggleCart, items, removeFromCart, updateQuantity } =
-    useCartStore();
+  const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state: RootState) => state.auth);
+  const { isCartOpen, items } = useAppSelector((state: RootState) => state.cart);
   const isMounted = useIsMounted();
+  const [syncCart] = useSyncCartMutation();
+
+  useEffect(() => {
+    if (user && isMounted) {
+      syncCart({ userId: user.id, items });
+    }
+  }, [items, user, syncCart, isMounted]);
 
   if (!isMounted) return null;
 
@@ -26,7 +34,7 @@ export default function CartDrawer() {
     <>
       <div
         className={`fixed inset-0 bg-black/50 z-9998 transition-opacity duration-300 ${isCartOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-        onClick={toggleCart}
+        onClick={() => dispatch(toggleCart())}
       />
 
       <div
@@ -35,7 +43,7 @@ export default function CartDrawer() {
         <div className="flex items-center justify-between p-6 pb-4">
           <h2 className="text-[28px] font-medium text-[#141718]">Cart</h2>
           <button
-            onClick={toggleCart}
+            onClick={() => dispatch(toggleCart())}
             className="p-2 -mr-2 hover:bg-gray-100 rounded-full transition-colors"
           >
             <X className="w-6 h-6 text-[#141718]" />
@@ -76,7 +84,7 @@ export default function CartDrawer() {
                       ${Number(item.price).toFixed(2)}
                     </span>
                     <button
-                      onClick={() => removeFromCart(item.id, item.color, user)}
+                      onClick={() => dispatch(removeFromCart({ id: item.id, color: item.color }))}
                       className="text-[#6C7275] hover:text-[#141718] transition-colors p-1 mt-1 -mr-1"
                     >
                       <X className="w-5 h-5" />
@@ -86,7 +94,7 @@ export default function CartDrawer() {
                 <div className="flex items-center justify-between border border-[#6C7275] rounded w-20 h-8 px-2">
                   <button
                     onClick={() =>
-                      updateQuantity(item.id, item.color, item.quantity - 1, user)
+                      dispatch(updateQuantity({ id: item.id, color: item.color, quantity: item.quantity - 1 }))
                     }
                     className="text-[#141718]"
                   >
@@ -97,7 +105,7 @@ export default function CartDrawer() {
                   </span>
                   <button
                     onClick={() =>
-                      updateQuantity(item.id, item.color, item.quantity + 1, user)
+                      dispatch(updateQuantity({ id: item.id, color: item.color, quantity: item.quantity + 1 }))
                     }
                     disabled={item.quantity >= item.stock}
                     className={`${item.quantity >= item.stock ? "text-gray-300 cursor-not-allowed" : "text-[#141718] hover:text-black"} transition-colors`}
@@ -134,7 +142,7 @@ export default function CartDrawer() {
               Checkout
             </button>
           ) : (
-            <Link href="/checkout" onClick={toggleCart}>
+            <Link href="/checkout" onClick={() => dispatch(toggleCart())}>
               <button className="w-full bg-[#141718] text-white py-3.5 rounded-lg font-medium text-[16px] mb-4 hover:bg-black transition-colors">
                 Checkout
               </button>
@@ -142,7 +150,7 @@ export default function CartDrawer() {
           )}
           <Link
             href="/cart"
-            onClick={toggleCart}
+            onClick={() => dispatch(toggleCart())}
             className="block text-center w-full text-[#141718] font-medium text-[14px] underline hover:text-[#6C7275] transition-colors"
           >
             View Cart

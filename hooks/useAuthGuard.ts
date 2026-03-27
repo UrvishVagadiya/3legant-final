@@ -3,11 +3,11 @@ import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import toast from "react-hot-toast";
 
-import { useAuth } from "@/context/AuthContext";
+import { useAppSelector } from "@/store";
 
 export function useAuthGuard() {
     const router = useRouter();
-    const { isAuthenticated: authStatus, loading } = useAuth();
+    const { isAuthenticated: authStatus, loading } = useAppSelector((state) => state.auth);
 
     const requireAuth = useCallback(
         (action: () => void) => {
